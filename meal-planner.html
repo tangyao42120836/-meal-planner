@@ -1,0 +1,2876 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>备餐助手 · 上班族版</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f9fafb;
+    --surface: #ffffff;
+    --surface2: #f4f4f5;
+    --ink: #18181b;
+    --ink2: #71717a;
+    --accent: #f97316;
+    --accent2: #ea580c;
+    --border: #e4e4e7;
+    --tag-bg: #fff7ed;
+    --tag-ink: #c2410c;
+    --green: #16a34a;
+    --green-bg: #f0fdf4;
+    --shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.05);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans SC', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* === HEADER === */
+  header {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    color: var(--ink);
+    border-bottom: 1px solid rgba(228, 228, 231, 0.5);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .logo span { color: var(--accent); }
+  .header-sub { display: none; } /* 隐藏副标题，更极简 */
+
+  .header-btn {
+    background: transparent;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: var(--ink);
+    padding: 6px;
+    border-radius: 50%;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .header-btn:hover { background: var(--surface2); }
+
+  /* === LAYOUT === */
+  .app {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+  }
+
+  .profile-card { display: none; } /* 极简模式：主界面隐藏偏好卡片，移到设置里 */
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--surface2);
+    color: var(--ink);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .tag.green { background: var(--green-bg); color: var(--green); }
+  .profile-edit {
+    font-size: 12px;
+    color: var(--ink2);
+    cursor: pointer;
+    text-decoration: underline;
+    white-space: nowrap;
+  }
+
+  /* === TABS === */
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0;
+    overflow-x: auto;
+    overflow-y: hidden; /* 限制只能水平方向滑动 */
+    -webkit-overflow-scrolling: touch; /* iOS 弹性滚动 */
+    scrollbar-width: none; /* Firefox 隐藏滚动条 */
+    position: sticky;
+    top: 57px; /* header 高度 */
+    background: rgba(249, 250, 251, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 90;
+    padding-top: 10px;
+  }
+  .tabs::-webkit-scrollbar { display: none; } /* Chrome/Safari 隐藏滚动条 */
+  
+  .tab {
+    padding: 10px 4px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink2);
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .tab.active {
+    color: var(--ink);
+    font-weight: 600;
+    border-bottom-color: var(--accent);
+  }
+
+  /* === SECTIONS === */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* === GENERATE BUTTON === */
+  .gen-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .gen-row .select-wrap {
+    flex: 1;
+    min-width: calc(50% - 5px);
+  }
+  .select-wrap select {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 13px;
+    color: var(--ink);
+    font-family: inherit;
+    cursor: pointer;
+    outline: none;
+  }
+  .action-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+    align-items: stretch;
+  }
+  #genPlanBtn {
+    flex: 1;
+    justify-content: center;
+    font-size: 15px;
+    padding: 12px;
+  }
+  .btn-history {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-history:hover { background: var(--surface2); }
+  .btn-gen {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+  .btn-gen:hover { background: var(--accent2); }
+  .btn-gen:disabled { background: #c0b8a8; cursor: not-allowed; }
+  .btn-sec {
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .btn-sec:hover { background: var(--surface2); }
+
+  /* === LOADING === */
+  .loading {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--ink2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .loading-progress {
+    display: flex;
+    height: 50px;
+    align-items: center;
+    justify-content: flex-start;
+    margin-bottom: 24px;
+    overflow: hidden;
+    padding: 0 16px;
+    width: 240px;
+    position: relative;
+    -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+    mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+  }
+  .prog-emoji {
+    font-size: 32px;
+    flex-shrink: 0;
+    opacity: 0;
+    width: 32px;
+    margin-right: 12px;
+    display: inline-block;
+    text-align: center;
+    animation: conveyorBelt 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  @keyframes conveyorBelt {
+    0% { transform: translateX(-30px) scale(0.5) rotate(-15deg); opacity: 0; width: 0; margin-right: 0; }
+    100% { transform: translateX(0) scale(1) rotate(0); opacity: 1; width: 32px; margin-right: 12px; }
+  }
+  .prog-emoji.leaving {
+    animation: conveyorLeave 0.5s ease-out forwards;
+  }
+  @keyframes conveyorLeave {
+    0% { transform: translateX(0) scale(1); opacity: 1; width: 32px; margin-right: 12px; }
+    100% { transform: translateX(30px) scale(0.5) rotate(15deg); opacity: 0; width: 32px; margin-right: 12px; }
+  }
+  .loading p { 
+    font-size: 20px; 
+    font-weight: 700;
+    color: var(--ink);
+    margin-top: 12px; 
+    letter-spacing: 0.02em;
+    text-align: center;
+    padding: 0 10px;
+  }
+  .loading-sub {
+    font-size: 14px;
+    color: var(--ink2);
+    margin-top: 12px;
+    opacity: 0.8;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  /* === MEAL PLAN GRID === */
+  .week-grid {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    overflow-x: auto;
+    padding-bottom: 12px; /* 给阴影留空间 */
+  }
+  .day-col {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    min-width: 140px;
+    flex: 1;
+    box-shadow: var(--shadow);
+  }
+  .day-header {
+    background: var(--surface2);
+    color: var(--ink);
+    text-align: center;
+    padding: 12px 10px;
+    font-size: 15px;
+    font-weight: 700;
+    border-bottom: 1px solid var(--border);
+  }
+  .day-col.today .day-header { 
+    background: var(--tag-bg); 
+    color: var(--tag-ink); 
+  }
+  .meal-slot {
+    padding: 16px 14px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+    background: var(--surface);
+  }
+  .meal-slot:hover { background: var(--surface2); }
+  .meal-slot:last-child { border-bottom: none; }
+  .meal-type {
+    font-size: 14px;
+    color: var(--ink2);
+    font-weight: 500;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .meal-name {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .meal-note {
+    font-size: 14px;
+    color: var(--ink2);
+    margin-bottom: 8px;
+    line-height: 1.5;
+  }
+  .meal-tool {
+    display: inline-block;
+    font-size: 13px;
+    background: var(--surface2);
+    color: var(--ink);
+    border-radius: 6px;
+    padding: 4px 8px;
+    margin-top: 4px;
+    margin-right: 6px;
+    font-weight: 500;
+  }
+  .meal-slot-hint {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border);
+    display: flex; 
+    gap: 8px;
+  }
+  .meal-slot-hint span {
+    flex: 1;
+    text-align: center;
+    cursor: pointer; 
+    padding: 8px 10px; 
+    border-radius: 8px; 
+    background: var(--surface); 
+    border: 1px solid var(--border);
+    color: var(--ink);
+    font-weight: 500;
+    font-size: 13px;
+    transition: all 0.15s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .meal-slot-hint span:hover, .meal-slot-hint span:active { 
+    background: var(--surface2); 
+    border-color: var(--ink2);
+  }
+
+  /* === RECIPE MODAL === */
+  .recipe-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(42,35,24,0.6);
+    z-index: 300;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+  }
+  .recipe-modal-overlay.open { display: flex; }
+  @media (min-width: 600px) {
+    .recipe-modal-overlay { align-items: center; padding: 20px; }
+  }
+  .recipe-modal {
+    background: var(--surface);
+    border-radius: 18px 18px 0 0;
+    width: 100%;
+    max-width: 520px;
+    max-height: 88vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    animation: slideUp 0.25s ease;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  @media (min-width: 600px) {
+    .recipe-modal { border-radius: 16px; max-height: 80vh; }
+  }
+  @keyframes slideUp {
+    from { transform: translateY(40px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .rm-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 24px 24px 16px;
+    position: sticky;
+    top: 0;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    z-index: 2;
+    border-radius: 18px 18px 0 0;
+  }
+  .rm-title {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.3;
+    flex: 1;
+    padding-right: 12px;
+    color: var(--ink);
+  }
+  .rm-close {
+    width: 32px; height: 32px;
+    border: none;
+    background: rgba(0,0,0,0.05);
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    color: var(--ink);
+    transition: background 0.15s;
+  }
+  .rm-close:hover { background: rgba(0,0,0,0.1); }
+  .rm-body { padding: 24px; }
+  .rm-meta-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .rm-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .rm-section-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 16px;
+    margin-top: 32px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .rm-section-title::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 18px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+  .rm-ingredients {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    background: var(--surface2);
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+  }
+  @media (min-width: 600px) {
+    .rm-ingredients { grid-template-columns: 1fr 1fr; }
+  }
+  .rm-ing {
+    display: flex;
+    justify-content: space-between;
+    font-size: 16px;
+    color: var(--ink);
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 6px;
+  }
+  .rm-steps { list-style: none; counter-reset: rmsteps; padding-left: 0; }
+  .rm-steps li {
+    counter-increment: rmsteps;
+    padding: 0 0 24px 40px;
+    position: relative;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--ink);
+  }
+  .rm-steps li:last-child { padding-bottom: 0; }
+  .rm-steps li::before {
+    content: counter(rmsteps);
+    position: absolute;
+    left: 0; top: 2px;
+    width: 24px; height: 24px;
+    background: var(--accent);
+    color: white;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .rm-tip {
+    background: var(--tag-bg);
+    color: var(--tag-ink);
+    padding: 16px;
+    border-radius: 12px;
+    font-size: 16px;
+    line-height: 1.6;
+    margin-top: 32px;
+  }
+  .rm-loading {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--ink2);
+  }
+  .bouncing-dots {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+    height: 40px;
+  }
+  .bouncing-dots span {
+    width: 12px;
+    height: 12px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: bounceDot 1.4s infinite ease-in-out both;
+  }
+  .bouncing-dots span:nth-child(1) { animation-delay: -0.32s; }
+  .bouncing-dots span:nth-child(2) { animation-delay: -0.16s; }
+  @keyframes bounceDot {
+    0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  .export-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(42,35,24,0.6);
+    z-index: 320;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+  }
+  .export-modal-overlay.open { display: flex; }
+  @media (min-width: 600px) {
+    .export-modal-overlay { align-items: center; padding: 20px; }
+  }
+  .export-modal {
+    background: var(--surface);
+    border-radius: 18px 18px 0 0;
+    width: 100%;
+    max-width: 960px; /* 增加一点宽度，适应封面生成器内容 */
+    height: 88vh; /* 固定高度，方便内部滚动 */
+    max-height: 88vh;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    animation: slideUp 0.25s ease;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    display: flex;
+    flex-direction: column;
+  }
+  @media (min-width: 600px) {
+    .export-modal { border-radius: 16px; height: 84vh; max-height: 84vh; }
+  }
+  .export-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .export-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--ink);
+  }
+  .export-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  /* === EXPORT MODAL TABS === */
+  .export-tabs {
+    display: flex;
+    gap: 20px;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .export-tab {
+    padding: 12px 4px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink2);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.15s;
+  }
+  .export-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  
+  .export-tab-content { display: none; }
+  .export-tab-content.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+  /* 封面生成器专属样式 */
+  .cover-generator-layout {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    overflow: hidden;
+    flex: 1;
+  }
+  .cg-form {
+    width: 280px;
+    flex-shrink: 0;
+    overflow-y: auto;
+    padding-right: 10px;
+  }
+  .cg-preview {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--surface2);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-height: 0; /* 修复 flex 子元素滚动条失效问题 */
+  }
+  @media (max-width: 768px) {
+    .cover-generator-layout { flex-direction: column; overflow: auto; }
+    .cg-form { width: 100%; overflow: visible; padding-right: 0; }
+    .cg-preview { overflow: visible; }
+  }
+  
+  /* 复用 cover-generator.html 中的卡片样式 */
+  .cg-result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    gap: 20px;
+  }
+  @media (max-width: 600px) {
+    .cg-result-card { flex-direction: column; }
+  }
+  .cg-cover-wrap {
+    width: 315px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .cg-cover-preview {
+    width: 315px;
+    height: 420px;
+    background: #fffdf9;
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+  }
+  .cg-cover-inner {
+    padding: 24px 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 2;
+  }
+  .cg-cover-bg {
+    position: absolute;
+    right: -20px;
+    bottom: -20px;
+    width: 180px;
+    height: 180px;
+    background: radial-gradient(circle, rgba(255,77,79,0.05) 0%, rgba(255,253,249,0) 70%);
+    border-radius: 50%;
+    z-index: 1;
+  }
+  .cg-caption-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .cg-cap-content {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--ink);
+    flex: 1;
+    white-space: pre-wrap;
+    overflow-y: auto;
+  }
+  .export-controls input[type="text"] {
+    flex: 1;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+    background: var(--surface);
+  }
+  .export-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--ink2);
+    white-space: nowrap;
+    user-select: none;
+  }
+  .export-body {
+    padding: 18px 14px 24px;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    align-items: center;
+  }
+  .rb-card-wrap {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .rb-card {
+    width: 375px;
+    background: #fffdf9;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+  }
+  .rb-head {
+    padding: 22px 18px 14px;
+    background: linear-gradient(135deg, #ffecec 0%, #fffdf9 100%);
+  }
+  .rb-sub {
+    font-size: 12px;
+    font-weight: 800;
+    color: #ff4d4f;
+    letter-spacing: 0.8px;
+    margin-bottom: 6px;
+  }
+  .rb-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.25;
+  }
+  .rb-body { padding: 0 18px 18px; }
+  .rb-day {
+    background: var(--surface);
+    border: 1px solid rgba(0,0,0,0.03);
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    margin-top: 12px;
+  }
+  .rb-day-name {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-weight: 800;
+    font-size: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed var(--border);
+  }
+  .rb-meal {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    align-items: flex-start;
+  }
+  .rb-meal-tag {
+    font-size: 11px;
+    background: var(--surface2);
+    color: var(--ink2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .rb-meal-text { font-size: 13px; font-weight: 500; line-height: 1.35; }
+  .rb-shop-cat {
+    margin-top: 14px;
+  }
+  .rb-shop-title {
+    font-weight: 800;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  .rb-shop-list {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    border: 1px solid rgba(0,0,0,0.03);
+  }
+  .rb-shop-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--border);
+    font-size: 13px;
+  }
+  .rb-shop-item:last-child { border-bottom: none; }
+  .rb-qty { color: #ff4d4f; font-weight: 800; white-space: nowrap; }
+  .rb-footer {
+    padding: 12px 0 16px;
+    text-align: center;
+    font-size: 11px;
+    color: #9ca3af;
+    letter-spacing: 1px;
+  }
+
+  /* === SHOPPING LIST === */
+  .shop-section {
+    margin-bottom: 16px;
+  }
+  .shop-section-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+  }
+  .shop-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .shop-item:hover { border-color: var(--accent); }
+  .shop-item.checked {
+    opacity: 0.45;
+    text-decoration: line-through;
+  }
+  .shop-cb {
+    width: 16px; height: 16px;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .shop-item.checked .shop-cb {
+    background: var(--green);
+    border-color: var(--green);
+  }
+  .shop-cb-check { color: white; font-size: 10px; }
+  .shop-item-name { font-size: 13px; flex: 1; }
+  .shop-item-qty { font-size: 11px; color: var(--ink2); white-space: nowrap; }
+
+  /* === QUICK RECIPE === */
+  .recipe-list { display: grid; gap: 12px; }
+  .recipe-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    box-shadow: var(--shadow);
+  }
+  .recipe-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .recipe-name {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .recipe-meta {
+    display: flex;
+    gap: 8px;
+  }
+  .meta-tag {
+    font-size: 11px;
+    background: var(--surface2);
+    color: var(--ink2);
+    border-radius: 4px;
+    padding: 2px 8px;
+  }
+  .recipe-steps {
+    list-style: none;
+    counter-reset: steps;
+  }
+  .recipe-steps li {
+    counter-increment: steps;
+    padding: 5px 0 5px 28px;
+    position: relative;
+    font-size: 13px;
+    border-bottom: 1px dashed var(--border);
+  }
+  .recipe-steps li:last-child { border-bottom: none; }
+  .recipe-steps li::before {
+    content: counter(steps);
+    position: absolute;
+    left: 0;
+    top: 5px;
+    width: 18px; height: 18px;
+    background: var(--accent);
+    color: white;
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* === AI CHAT INPUT === */
+  .ai-input-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .ai-input-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .ai-input-row textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--ink);
+    background: var(--bg);
+    resize: none;
+    outline: none;
+    height: 80px;
+    line-height: 1.5;
+    transition: border-color 0.2s;
+  }
+  .ai-input-row textarea:focus { border-color: var(--accent); }
+  
+  .ai-input-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .ai-quick-prompts {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .quick-prompt {
+    font-size: 12px;
+    background: var(--surface2);
+    color: var(--ink2);
+    border-radius: 20px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .quick-prompt:hover, .quick-prompt:active { 
+    background: var(--border); 
+    color: var(--ink); 
+  }
+  #askBtn {
+    width: 100%;
+    height: 44px;
+    font-size: 15px;
+    justify-content: center;
+  }
+
+  /* === AI RESPONSE === */
+  .ai-response {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 10px 10px 0;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* === EMPTY STATE === */
+  .empty {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--ink2);
+  }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty h3 { font-family: 'Noto Serif SC', serif; font-size: 17px; margin-bottom: 6px; }
+  .empty p { font-size: 13px; opacity: 0.7; }
+
+  /* === MODAL === */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.open { 
+    display: flex; 
+    opacity: 1;
+  }
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    width: 100%;
+    max-width: 440px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    transform: scale(0.95);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .modal-overlay.open .modal {
+    transform: scale(1);
+  }
+  .modal h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    letter-spacing: -0.01em;
+  }
+  .form-group { margin-bottom: 16px; }
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink2);
+    margin-bottom: 5px;
+    letter-spacing: 0.04em;
+  }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--ink);
+    background: var(--bg);
+    outline: none;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    border-color: var(--accent);
+  }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+
+  /* === COPY BUTTON === */
+  .copy-row { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+
+  @media (max-width: 600px) {
+    .profile-card { padding: 14px; }
+    .app { padding: 16px 12px 60px; }
+    .tabs { top: 57px; } /* 确保手机端吸顶高度正确 */
+    .week-grid {
+      flex-direction: column;
+      gap: 16px;
+      overflow-x: visible;
+      padding-bottom: 0;
+    }
+    .day-col {
+      min-width: 100%;
+    }
+    .day-header {
+      font-size: 15px;
+      padding: 12px;
+      text-align: left;
+    }
+    .meal-slot {
+      padding: 16px 14px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">备餐<span>助手</span></div>
+  </div>
+  <button class="header-btn" onclick="openSettings()" title="设置">⚙️</button>
+</header>
+
+<div class="app">
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('plan')">📅 周计划</div>
+    <div class="tab" onclick="switchTab('tonight')">🎲 今晚吃啥</div>
+    <div class="tab" onclick="switchTab('shop')">🛒 采购清单</div>
+    <div class="tab" onclick="switchTab('ai')">🤖 问 AI</div>
+  </div>
+
+  <!-- =================== 周计划 =================== -->
+  <div id="sec-plan" class="section active">
+    <div class="gen-row">
+      <div class="select-wrap">
+        <select id="planDays">
+          <option value="weekday" selected>周中 (5天)</option>
+          <option value="weekend">周末 (2天)</option>
+        </select>
+      </div>
+      <div class="select-wrap">
+        <select id="planMeals">
+          <option value="lunch">午餐</option>
+          <option value="dinner">晚餐</option>
+          <option value="lunch_dinner" selected>午餐 + 晚餐</option>
+          <option value="all">三餐</option>
+        </select>
+      </div>
+    </div>
+    <div class="action-row">
+      <button class="btn-gen" id="genPlanBtn" onclick="generatePlan()">✨ AI 生成计划</button>
+      <button class="btn-history" onclick="openHistoryModal()" title="历史记录">📜 历史计划</button>
+      <button class="btn-history" onclick="openExportModal()" title="出图导出">📸 出图导出</button>
+    </div>
+
+    <div id="planContent">
+      <div class="empty">
+        <div class="empty-icon">🥢</div>
+        <h3>还没有生成计划</h3>
+        <p>点击上方「AI 生成计划」，根据你的偏好<br>自动规划饮食</p>
+      </div>
+    </div>
+  </div>
+
+  
+  <!-- =================== 今晚吃什么 =================== -->
+  <div id="sec-tonight" class="section">
+    <div class="gen-row">
+      <button class="btn-gen" id="btnTonight" onclick="generateTonight()" style="font-size: 15px; padding: 12px 24px; margin: 0 auto; display: block; width: 100%; text-align: center; justify-content: center;">🎲 一键决定今晚吃什么</button>
+    </div>
+    <div id="tonightContent">
+      <div class="empty">
+        <div class="empty-icon">🍱</div>
+        <h3>不想看计划？</h3>
+        <p>点击上方按钮，AI 直接给你安排今晚的一顿“免看火/一锅出”神仙晚餐</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== 采购清单 =================== -->
+  <div id="sec-shop" class="section">
+    <div class="gen-row">
+      <button class="btn-gen" id="genShopBtn" onclick="generateShopList()">✨ 生成采购清单</button>
+      <button class="btn-sec" onclick="clearChecked()">清除已勾选</button>
+      <button class="btn-sec" onclick="copyShopList()">📋 复制清单</button>
+      <button class="btn-sec" id="btnPantryToggle" onclick="togglePantryVisibility()">显示常备</button>
+      <button class="btn-sec" onclick="openExportModal()">📸 出图导出</button>
+    </div>
+    <div id="shopContent">
+      <div class="empty">
+        <div class="empty-icon">🛒</div>
+        <h3>采购清单为空</h3>
+        <p>先生成周计划，再来这里生成采购清单<br>或直接点击「生成采购清单」</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== 问 AI =================== -->
+  <div id="sec-ai" class="section">
+    <div class="ai-input-box">
+      <div class="ai-input-row">
+        <textarea id="aiQuestion" placeholder="问任何备餐问题，比如：今晚想吃辣的，用空气炸锅，10分钟能做什么？"></textarea>
+      </div>
+      <div class="ai-input-actions">
+        <div class="ai-quick-prompts">
+          <span class="quick-prompt" onclick="fillPrompt('推荐几个完全不用看火，丢进空气炸锅/烤箱就行的菜')">免看火神仙菜</span>
+          <span class="quick-prompt" onclick="fillPrompt('有什么连锅都不用洗的锡纸/微波炉食谱？')">不洗锅食谱</span>
+          <span class="quick-prompt" onclick="fillPrompt('推荐几个有肉有菜的电饭煲一锅出焖饭')">电饭煲一锅出</span>
+          <span class="quick-prompt" onclick="fillPrompt('山姆有哪些适合上班族直接扔空气炸锅的半成品？')">山姆快手半成品</span>
+          <span class="quick-prompt" onclick="fillPrompt('周末怎么提前切配腌制，工作日回来只要5分钟加热？')">周末极限备菜法</span>
+        </div>
+        <button class="btn-gen" onclick="askAI()" id="askBtn">发送</button>
+      </div>
+    </div>
+    <div id="aiHistory"></div>
+  </div>
+
+</div>
+
+<!-- ========= RECIPE MODAL ========= -->
+<div class="recipe-modal-overlay" id="recipeModal" onclick="closeRecipeIfOverlay(event)">
+  <div class="recipe-modal">
+    <div class="rm-header">
+      <div class="rm-title" id="rmTitle">食谱详情</div>
+      <button class="rm-close" onclick="closeRecipeModal()">✕</button>
+    </div>
+    <div class="rm-body" id="rmBody">
+      <div class="rm-loading"><div class="spinner"></div><p style="margin-top:10px;font-size:13px">AI 正在生成食谱…</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========= EXPORT MODAL ========= -->
+<div class="export-modal-overlay" id="exportModal" onclick="closeExportIfOverlay(event)">
+  <div class="export-modal">
+    <div class="export-header">
+      <div class="export-title">📸 小红书一站式导出</div>
+      <div class="export-actions">
+        <button class="btn-sec" onclick="closeExportModal()">关闭</button>
+      </div>
+    </div>
+    <div class="export-tabs">
+      <div class="export-tab active" onclick="switchExportTab('cards')">1. 导出内页内容图</div>
+      <div class="export-tab" onclick="switchExportTab('cover')">2. 生成封面与文案</div>
+    </div>
+    
+    <!-- 内页导出 -->
+    <div id="export-tab-cards" class="export-tab-content active">
+      <div class="export-controls" style="display:flex; align-items:center; gap:10px; padding:14px 20px; border-bottom:1px solid var(--border);">
+        <input id="expTitle" type="text" value="打工人带饭指南 🍱">
+        <label class="export-toggle">
+          <input type="checkbox" id="expHidePantry" checked onchange="renderExportCards()">
+          隐藏常备
+        </label>
+      </div>
+      <div class="export-body" id="exportCards" style="flex:1;"></div>
+    </div>
+
+    <!-- 封面与文案生成器 -->
+    <div id="export-tab-cover" class="export-tab-content">
+      <div class="cover-generator-layout">
+        <!-- 左侧表单 -->
+        <div class="cg-form">
+          <div class="form-group">
+            <label>系列/栏目名</label>
+            <input type="text" id="cg-series" value="打工人带饭指南 🍱">
+          </div>
+          
+          <div class="form-group">
+            <label>核心主题标签</label>
+            <input type="text" id="cg-top3" value="一锅出 / 少洗碗 / 免看火" placeholder="例如：一锅出 / 少洗碗 / 免看火">
+            <div style="font-size:11px; color:var(--ink2); margin-top:4px">这三个词会作为本期封面最大的亮点展示</div>
+          </div>
+          
+          <div class="form-group">
+            <label>开启引导评论 (CTA)</label>
+            <select id="cg-cta">
+              <option value="yes">是 (评论领清单)</option>
+              <option value="no">否</option>
+            </select>
+          </div>
+
+          <button class="btn-gen" onclick="generateCoverAndCaption()" id="btn-gen-cover" style="margin-top:10px;">✨ 自动生成 5 套内容</button>
+        </div>
+
+        <!-- 右侧预览 -->
+        <div class="cg-preview" id="cg-preview-container">
+          <div class="empty" style="background:var(--surface); border-radius:12px; height:100%; display:flex; flex-direction:column; justify-content:center;">
+            <div class="empty-icon">🎨</div>
+            <h3>等待生成</h3>
+            <p>点击左侧按钮，AI 将根据你的计划生成核心主题，并产出封面和文案</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========= HISTORY MODAL ========= -->
+<div class="modal-overlay" id="historyModal" onclick="closeHistoryIfOverlay(event)">
+  <div class="modal">
+    <h2>📜 历史计划 (最近5条)</h2>
+    <div id="historyList" style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px;"></div>
+    <div class="modal-actions">
+      <button class="btn-sec" onclick="closeHistoryModal()" style="flex:1">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========= SETTINGS MODAL ========= -->
+<div class="modal-overlay" id="settingsModal" onclick="closeIfOverlay(event)">
+  <div class="modal">
+    <h2>⚙ 偏好设置</h2>
+    
+    <div style="font-size:12px; font-weight:600; color:var(--ink2); margin: 20px 0 10px; padding-bottom: 4px; border-bottom: 1px solid var(--border)">饮食习惯</div>
+    <div class="form-group">
+      <label>采购渠道</label>
+      <select id="s-store">
+        <option value="山姆+盒马">山姆 + 盒马</option>
+        <option value="山姆">山姆为主</option>
+        <option value="盒马">盒马为主</option>
+        <option value="普通超市">普通超市</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>不吃 / 过敏食材（逗号分隔）</label>
+      <input type="text" id="s-avoid" value="鸡蛋" placeholder="例如：鸡蛋,花生,海鲜">
+    </div>
+    <div class="form-group">
+      <label>口味偏好</label>
+      <input type="text" id="s-taste" value="中国菜，偏家常口味" placeholder="例如：川菜，偏辣，少油">
+    </div>
+    <div class="form-group">
+      <label>用餐人数</label>
+      <select id="s-people">
+        <option value="1人" selected>1人</option>
+        <option value="2人">2人</option>
+        <option value="3-4人">3-4人</option>
+      </select>
+    </div>
+
+    <div style="font-size:12px; font-weight:600; color:var(--ink2); margin: 20px 0 10px; padding-bottom: 4px; border-bottom: 1px solid var(--border)">AI 配置</div>
+    <div class="form-group">
+      <label>SiliconFlow API Key</label>
+      <div style="display: flex; gap: 8px;">
+        <input type="password" id="s-apikey" placeholder="输入您的 sk-... 密钥" style="flex: 1;">
+        <button class="btn-sec" type="button" onclick="toggleApiKeyVisibility()" id="btn-toggle-key" style="padding: 0 12px; font-size: 12px;">显示</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>可用厨具（逗号分隔）</label>
+      <input type="text" id="s-tools" value="空气炸锅,蒸锅,烤箱,炒锅" placeholder="例如：空气炸锅,微波炉">
+    </div>
+    <div class="form-group">
+      <label>每顿最多做饭时间</label>
+      <select id="s-time">
+        <option value="15分钟">15分钟</option>
+        <option value="30分钟" selected>30分钟</option>
+        <option value="45分钟">45分钟</option>
+        <option value="1小时">1小时</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-sec" onclick="closeSettings()" style="flex:1">取消</button>
+      <button class="btn-gen" onclick="saveSettings()" style="flex:1;justify-content:center">保存设置</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script>
+// ============ STATE ============
+let settings = {
+  store: '山姆+盒马',
+  avoid: '鸡蛋',
+  taste: '中国菜，偏家常口味',
+  tools: '空气炸锅,蒸锅,烤箱,炒锅',
+  time: '30分钟',
+  people: '1人',
+  apikey: ''
+};
+let currentPlan = null;
+let shopItems = [];
+let aiHistory = [];
+let planHistory = [];
+let recipeCache = {};
+let hidePantry = true;
+
+// Load from localStorage
+try {
+  const saved = localStorage.getItem('mealplanner_settings');
+  if (saved) settings = { ...settings, ...JSON.parse(saved) };
+  
+  const savedHistory = localStorage.getItem('mealplanner_history');
+  if (savedHistory) planHistory = JSON.parse(savedHistory);
+
+  const savedRecipes = localStorage.getItem('mealplanner_recipes');
+  if (savedRecipes) recipeCache = JSON.parse(savedRecipes);
+} catch(e) {}
+
+function saveToStorage() {
+  try {
+    localStorage.setItem('mealplanner_settings', JSON.stringify(settings));
+    localStorage.setItem('mealplanner_history', JSON.stringify(planHistory));
+    localStorage.setItem('mealplanner_recipes', JSON.stringify(recipeCache));
+    
+    // 将当前计划和采购清单写入缓存（专供“小红书生成器”跨页面读取）
+    // 注意：由于页面初始化时并没有读取这两项，所以页面刷新依然是干干净净的初始状态
+    if (currentPlan) {
+      localStorage.setItem('mealplanner_plan', JSON.stringify(currentPlan));
+    }
+    localStorage.setItem('mealplanner_shop', JSON.stringify(shopItems));
+  } catch(e) {}
+}
+
+function openCardGenerator() {
+  window.open('redbook-generator.html', '_blank');
+}
+
+function openExportModal() {
+  const plan = getExportPlan();
+  if (!plan) {
+    alert('请先生成周计划');
+    return;
+  }
+  document.getElementById('exportModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  renderExportCards();
+}
+
+function closeExportModal() {
+  document.getElementById('exportModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function closeExportIfOverlay(e) {
+  if (e.target === document.getElementById('exportModal')) closeExportModal();
+}
+
+function switchExportTab(tab) {
+  document.querySelectorAll('.export-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.export-tab-content').forEach(c => c.classList.remove('active'));
+  if(tab === 'cards') {
+    document.querySelectorAll('.export-tab')[0].classList.add('active');
+    document.getElementById('export-tab-cards').classList.add('active');
+  } else {
+    document.querySelectorAll('.export-tab')[1].classList.add('active');
+    document.getElementById('export-tab-cover').classList.add('active');
+    // 切换到封面tab时，如果AI还没提炼过标签，尝试用AI自动提炼
+    if(document.getElementById('cg-top3').value === '一锅出 / 少洗碗 / 免看火') {
+      autoSuggestCoverTheme();
+    }
+  }
+}
+
+async function autoSuggestCoverTheme() {
+  const plan = getExportPlan();
+  if (!plan) return;
+  
+  const dishes = [];
+  plan.days.forEach(d => {
+    d.meals.forEach(m => dishes.push(m.name + (m.tool ? `(${m.tool})` : '')));
+  });
+  
+  const btn = document.getElementById('btn-gen-cover');
+  const originalText = btn.textContent;
+  btn.textContent = 'AI 正在提炼本周主题...';
+  btn.disabled = true;
+  
+  const prompt = `我这周的备餐计划包含以下菜品：${dishes.join('、')}。
+请帮我提炼出最吸引人的小红书封面“核心主题标签”（只返回 3 个标签，用 " / " 分隔）。
+标签必须短平快，例如：一锅出 / 减脂神仙 / 免看火 / 懒人电饭煲 / 极速出锅 等。
+只返回这三个词，不要任何其他文字。`;
+
+  try {
+    const res = await callAI(prompt, "你是一个小红书爆款文案专家，只返回 3 个短标签，用 ' / ' 分隔。不要返回任何其他格式或说明。");
+    // 这里因为 AI 可能返回代码块或多余字符，我们需要清洗一下
+    let cleanRes = res;
+    // 移除 markdown 格式 (例如: ``` 或 ** )
+    cleanRes = cleanRes.replace(/```[a-z]*\n?/gi, '').replace(/```/g, '').replace(/\*\*/g, '').trim();
+    
+    cleanRes = cleanRes.replace(/['"「」]/g, '').trim();
+    
+    // 取第一行包含 '/' 的内容，因为 AI 有时候会废话
+    const lines = cleanRes.split('\n').map(l => l.trim()).filter(l => l.includes('/'));
+    if (lines.length > 0) {
+        document.getElementById('cg-top3').value = lines[0];
+    } else if (cleanRes.includes('/')) {
+        document.getElementById('cg-top3').value = cleanRes;
+    }
+  } catch(e) {
+    console.warn("自动提炼主题失败", e);
+    // 这里加个 alert 方便用户知道为什么卡住了，通常是因为 API Key 没配置或余额不足
+    if (e.message.includes('API Key') || e.message.includes('HTTP')) {
+        alert("提炼主题失败，请检查设置中的 API Key 是否正确：" + e.message);
+    }
+  } finally {
+    // 确保无论成功还是失败，按钮状态都会恢复
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
+}
+
+// 封面与文案生成逻辑
+const CG_VARIANTS = [
+  { id: 'v1', tag: '变体01 · 强调省时', title: '本周省事晚餐', focus: '时间' },
+  { id: 'v2', tag: '变体02 · 强调省心', title: '照着买的一周菜单', focus: '抄作业' },
+  { id: 'v3', tag: '变体03 · 强调神仙', title: '本周神仙打工菜单', focus: '神仙' },
+  { id: 'v4', tag: '变体04 · 强调实操', title: '本周极简实操菜单', focus: '实操' },
+  { id: 'v5', tag: '变体05 · 强调不纠结', title: '本周不纠结菜单', focus: '心态' }
+];
+
+function generateCoverAndCaption() {
+  const btn = document.getElementById('btn-gen-cover');
+  btn.textContent = '生成中...';
+  btn.disabled = true;
+
+  const plan = getExportPlan();
+  const daysCount = plan && plan.days ? plan.days.length : 5;
+  const daysStr = daysCount + '天';
+  const peopleStr = settings.people || '1人份';
+
+  const data = {
+    series: document.getElementById('cg-series').value.trim() || '打工人带饭指南 🍱',
+    days: daysStr,
+    people: peopleStr,
+    top3: document.getElementById('cg-top3').value.trim() || '一锅出 / 少洗碗 / 免看火',
+    cta: document.getElementById('cg-cta').value === 'yes'
+  };
+
+  const paramText = `${data.days}｜${data.people}`;
+  const seriesShort = (data.series || '').replace('带饭指南', '带饭').replace(/[🍱🥘🍳]/g, '').trim();
+  const container = document.getElementById('cg-preview-container');
+  container.innerHTML = '';
+
+  let dishesList = '';
+  if (plan && plan.days) {
+    const allDishes = [];
+    plan.days.forEach(d => d.meals.forEach(m => allDishes.push(m.name.split('+')[0])));
+    const uniqueDishes = [...new Set(allDishes)];
+    dishesList = uniqueDishes.slice(0, 6).map(d => `✔️ ${d}`).join('\n');
+    if (uniqueDishes.length > 6) dishesList += '\n...等';
+  } else {
+    dishesList = '✔️ 暂无食谱，请先生成计划';
+  }
+
+  CG_VARIANTS.forEach((v, index) => {
+    const capTitle = `【${v.title}】${data.days}${data.people}｜主题：${data.top3.split('/').join('·')}｜附清单`;
+    
+    let capBody = `打工人的极简晚餐又来啦！主打一个${v.focus === '抄作业' ? '直接抄作业' : v.focus === '时间' ? '下班快速吃上饭' : '不费神不纠结'}。\n\n`;
+    capBody += `🔖 本期配置：${data.days}｜${data.people}\n`;
+    capBody += `🎯 本期亮点：${data.top3.split('/').join('、')}\n\n`;
+    capBody += `📖 本周精选菜单：\n${dishesList}\n\n`;
+    capBody += `👇 详细的【超市采购清单】和【极简做法步骤】已经整理在图里啦！\n`;
+    if (data.cta) capBody += `需要可复制纯文本的姐妹，在评论区扣【清单】，我发你！\n\n`;
+    capBody += `#${data.series.replace(/\s|🍱|🥘|🍳/g,'')} #上班族带饭 #备餐 #懒人食谱 #极简做法`;
+
+    const themesLine = data.top3.split('/').map(t => t.trim()).filter(Boolean).join(' / ');
+
+    const cardHtml = `
+      <div class="cg-result-card">
+        <div class="cg-cover-wrap">
+          <div class="cg-cover-preview" id="cg-cover-${index}">
+            <div class="cg-cover-bg"></div>
+            <div class="cg-cover-inner" style="display:flex; flex-direction:column; padding:32px 24px;">
+              <div style="font-size:16px; font-weight:400; color:var(--ink2);">${seriesShort}</div>
+              <div style="font-family:'Noto Serif SC',serif; font-size:44px; font-weight:900; line-height:1.12; color:var(--ink); margin-top:86px; letter-spacing:1px; word-break:break-word;">${v.title}</div>
+              <div style="margin-top:18px;">
+                <span style="display:inline-block; background:var(--surface2); color:var(--ink2); padding:6px 12px; border-radius:8px; font-size:18px; font-weight:500;">${paramText}</span>
+              </div>
+              <div style="margin-top:auto; font-size:18px; font-weight:500; color:var(--ink2); letter-spacing:0.5px;">${themesLine}</div>
+            </div>
+          </div>
+          <button class="btn-sec" style="justify-content:center; width:100%; font-weight:700; font-size:12px;" onclick="exportCGCover(${index}, '${v.title}')">⬇️ 导出封面</button>
+        </div>
+        
+        <div class="cg-caption-wrap">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span style="font-size:11px; font-weight:700; color:var(--accent); background:var(--tag-bg); padding:3px 6px; border-radius:6px;">${v.tag}</span>
+            <button class="btn-sec" style="font-size:12px; padding:4px 10px;" onclick="copyCGText('cg-cap-text-${index}')">📋 复制文案</button>
+          </div>
+          <div class="cg-cap-content" id="cg-cap-text-${index}"><span style="font-weight:800; font-size:14px; color:var(--ink); display:block; margin-bottom:8px;">${capTitle}</span>${capBody}</div>
+        </div>
+      </div>
+    `;
+    container.insertAdjacentHTML('beforeend', cardHtml);
+  });
+
+  btn.textContent = '✨ 自动生成 5 套内容';
+  btn.disabled = false;
+}
+
+function copyCGText(id) {
+  const text = document.getElementById(id).innerText;
+  fallbackCopyTextToClipboard(text);
+}
+
+  function exportCGCover(index, titleStr) {
+    const el = document.getElementById(`cg-cover-${index}`);
+    if (typeof html2canvas !== 'function') return alert('组件未加载');
+    // 尺寸映射：原图 315x420, 放大 3.428 倍 ≈ 1080x1440
+    html2canvas(el, { scale: 3.428, useCORS: true, backgroundColor: '#fffdf9' }).then(canvas => {
+      const a = document.createElement('a');
+      a.download = `cover_0${index + 1}_${titleStr}.png`;
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    }).catch(err => alert('导出失败：' + err.message));
+  }
+
+function getExportPlan() {
+  if (currentPlan && currentPlan.days && currentPlan.days.length) return currentPlan;
+  if (planHistory && planHistory.length && planHistory[0].plan) return planHistory[0].plan;
+  return null;
+}
+
+function getLatestRecipe() {
+  const keys = Object.keys(recipeCache || {});
+  if (keys.length === 0) return null;
+  return recipeCache[keys[keys.length - 1]];
+}
+
+function renderExportCards() {
+  const wrap = document.getElementById('exportCards');
+  if (!wrap) return;
+  const title = (document.getElementById('expTitle')?.value || '').trim() || '打工人带饭指南 🍱';
+  const hide = document.getElementById('expHidePantry') ? document.getElementById('expHidePantry').checked : true;
+  const plan = getExportPlan();
+  const latestRecipe = getLatestRecipe();
+
+  let html = '';
+  if (plan) html += buildPlanExportCard(plan, title);
+  if (shopItems && shopItems.length) html += buildShopExportCard(shopItems, title, hide);
+  if (latestRecipe) html += buildRecipeExportCard(latestRecipe, title);
+  wrap.innerHTML = html;
+}
+
+function buildPlanExportCard(plan, title) {
+  const cardId = 'rbCardPlan';
+  const body = plan.days.map(d => {
+    const meals = (d.meals || []).map(m => {
+      const tool = m.tool ? ` <span style="color:#ff4d4f;font-weight:800;font-size:11px">${m.tool}</span>` : '';
+      return `<div class="rb-meal"><span class="rb-meal-tag">${m.type}</span><div class="rb-meal-text">${m.name}${tool}</div></div>`;
+    }).join('');
+    return `<div class="rb-day"><div class="rb-day-name">${d.day}</div>${meals}</div>`;
+  }).join('');
+
+  return `
+    <div class="rb-card-wrap">
+      <div class="rb-card" id="${cardId}">
+        <div class="rb-head">
+          <div class="rb-sub">${title}</div>
+          <div class="rb-title">本周懒人菜单</div>
+        </div>
+        <div class="rb-body">${body}</div>
+        <div class="rb-footer">@备餐助手</div>
+      </div>
+      <button class="btn-gen" style="width:375px;justify-content:center" onclick="exportCardImage('${cardId}')">⬇️ 导出这张图</button>
+    </div>
+  `;
+}
+
+function buildShopExportCard(items, title, hidePantryLocal) {
+  const cardId = 'rbCardShop';
+  const cats = {};
+  items.forEach(i => {
+    if (hidePantryLocal && i.pantry) return;
+    if (!cats[i.cat]) cats[i.cat] = { emoji: i.catEmoji || '📦', items: [] };
+    cats[i.cat].items.push(i);
+  });
+
+  const catHtml = Object.entries(cats).map(([cat, info]) => {
+    const list = info.items.map(i => `<div class="rb-shop-item"><span>${i.name}</span><span class="rb-qty">${i.qty || ''}</span></div>`).join('');
+    return `<div class="rb-shop-cat"><div class="rb-shop-title">${info.emoji} ${cat}</div><div class="rb-shop-list">${list}</div></div>`;
+  }).join('');
+
+  const hint = hidePantryLocal ? `<div style="font-size:12px;color:#71717a;margin-top:12px">已隐藏：常备主食/调料（缺了再买）</div>` : '';
+
+  return `
+    <div class="rb-card-wrap">
+      <div class="rb-card" id="${cardId}">
+        <div class="rb-head">
+          <div class="rb-sub">${title}</div>
+          <div class="rb-title">本周采购清单</div>
+        </div>
+        <div class="rb-body">${hint}${catHtml}</div>
+        <div class="rb-footer">@备餐助手</div>
+      </div>
+      <button class="btn-gen" style="width:375px;justify-content:center" onclick="exportCardImage('${cardId}')">⬇️ 导出这张图</button>
+    </div>
+  `;
+}
+
+function buildRecipeExportCard(r, title) {
+  const cardId = 'rbCardRecipe';
+  const time = r.time || '—';
+  const tool = r.tool || '—';
+  const dish = (r.dishes && r.dishes[0]) ? r.dishes[0] : null;
+  const steps = dish ? dish.steps : (r.steps || []);
+  const ing = (r.ingredients || []).slice(0, 10).map(i => `<span style="display:inline-block;background:var(--surface2);padding:4px 8px;border-radius:6px;font-size:12px;margin:0 8px 8px 0">${i.name} ${i.amount || ''}</span>`).join('');
+  const stepsHtml = steps.slice(0, 6).map((s, idx) => `<div style="font-size:13px;line-height:1.55;margin-top:10px"><span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#ff4d4f;color:#fff;font-weight:800;font-size:11px;margin-right:8px">${idx + 1}</span>${s}</div>`).join('');
+
+  return `
+    <div class="rb-card-wrap">
+      <div class="rb-card" id="${cardId}">
+        <div class="rb-head">
+          <div class="rb-sub">${title}</div>
+          <div class="rb-title">${r.name || '今日神仙食谱'}</div>
+        </div>
+        <div class="rb-body">
+          <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+            <span style="font-size:12px;background:#fef2f2;color:#ff4d4f;padding:4px 10px;border-radius:999px;font-weight:800">⏱ ${time}</span>
+            <span style="font-size:12px;background:#fef2f2;color:#ff4d4f;padding:4px 10px;border-radius:999px;font-weight:800">🔧 ${tool}</span>
+          </div>
+          <div style="margin-top:14px;font-weight:800;font-size:14px;color:var(--ink2)">🛒 食材</div>
+          <div style="margin-top:10px">${ing}</div>
+          <div style="margin-top:14px;font-weight:900;font-size:14px">👩‍🍳 做法</div>
+          <div style="margin-top:6px">${stepsHtml}</div>
+          ${r.tip ? `<div style="margin-top:16px;background:var(--tag-bg);color:var(--tag-ink);padding:12px;border-radius:12px;font-size:13px;line-height:1.6">💡 ${r.tip}</div>` : ''}
+        </div>
+        <div class="rb-footer">@备餐助手</div>
+      </div>
+      <button class="btn-gen" style="width:375px;justify-content:center" onclick="exportCardImage('${cardId}')">⬇️ 导出这张图</button>
+    </div>
+  `;
+}
+
+function exportCardImage(cardId) {
+  const el = document.getElementById(cardId);
+  if (!el) return;
+  if (typeof html2canvas !== 'function') {
+    alert('导出组件加载失败，请刷新页面重试');
+    return;
+  }
+  html2canvas(el, { scale: 3, useCORS: true, backgroundColor: '#fffdf9' }).then(canvas => {
+    const a = document.createElement('a');
+    a.download = `${cardId}-${Date.now()}.png`;
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  }).catch(err => {
+    alert('导出失败：' + (err?.message || err));
+  });
+}
+
+function togglePantryVisibility() {
+  hidePantry = !hidePantry;
+  const btn = document.getElementById('btnPantryToggle');
+  if (btn) btn.textContent = hidePantry ? '显示常备' : '隐藏常备';
+  renderShopList(null);
+}
+
+function normalizeShopItem(name, rawCat, rawEmoji) {
+  const n = (name || '').trim();
+  const raw = (rawCat || '').trim();
+  const lower = n.toLowerCase();
+  let pantry = false;
+  let cat = raw || '其他';
+  let emoji = rawEmoji || '📦';
+
+  const tofuKeywords = ['豆腐', '内酯豆腐', '嫩豆腐', '北豆腐', '老豆腐', '豆干', '腐竹', '豆皮', '豆泡', '豆腐丝', '豆浆'];
+  const stapleKeywords = ['大米', '米', '杂粮米', '燕麦', '意面', '面条', '米粉', '面粉', '馒头', '吐司', '玉米面'];
+  const condimentKeywords = ['生抽', '老抽', '蚝油', '耗油', '盐', '糖', '醋', '料酒', '胡椒', '淀粉', '香油', '芝麻油', '花椒', '八角', '桂皮', '香叶', '孜然', '辣椒粉', '豆瓣酱', '番茄酱', '沙拉酱', '食用油', '橄榄油', '油'];
+
+  if (tofuKeywords.some(k => n.includes(k))) {
+    cat = '豆制品/蛋白';
+    emoji = '🫘';
+  }
+
+  if (stapleKeywords.some(k => n === k || n.includes(k))) {
+    pantry = true;
+    cat = '常备/主食';
+    emoji = '🍚';
+  }
+
+  if (condimentKeywords.some(k => n === k || n.includes(k))) {
+    pantry = true;
+    cat = '常备/调料';
+    emoji = '🧂';
+  }
+
+  if (raw.includes('主食') && tofuKeywords.some(k => n.includes(k))) {
+    cat = '豆制品/蛋白';
+    emoji = '🫘';
+  }
+
+  return { cat, emoji, pantry, name: n, qty: '', note: '' };
+}
+
+// ============ TABS ============
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  const tabs = ['plan','tonight','shop','ai'];
+  document.querySelectorAll('.tab')[tabs.indexOf(name)].classList.add('active');
+  document.getElementById('sec-'+name).classList.add('active');
+}
+
+// ============ SETTINGS ============
+function toggleApiKeyVisibility() {
+  const input = document.getElementById('s-apikey');
+  const btn = document.getElementById('btn-toggle-key');
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '隐藏';
+  } else {
+    input.type = 'password';
+    btn.textContent = '显示';
+  }
+}
+
+function openSettings() {
+  document.getElementById('s-store').value = settings.store;
+  document.getElementById('s-avoid').value = settings.avoid;
+  document.getElementById('s-taste').value = settings.taste;
+  document.getElementById('s-tools').value = settings.tools;
+  document.getElementById('s-time').value = settings.time;
+  document.getElementById('s-people').value = settings.people;
+  document.getElementById('s-apikey').value = settings.apikey || '';
+  document.getElementById('settingsModal').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('open');
+}
+function closeIfOverlay(e) {
+  if (e.target === document.getElementById('settingsModal')) closeSettings();
+}
+function saveSettings() {
+  settings.store = document.getElementById('s-store').value;
+  settings.avoid = document.getElementById('s-avoid').value;
+  settings.taste = document.getElementById('s-taste').value;
+  settings.tools = document.getElementById('s-tools').value;
+  settings.time = document.getElementById('s-time').value;
+  settings.people = document.getElementById('s-people').value;
+  settings.apikey = document.getElementById('s-apikey').value.trim();
+  saveToStorage();
+  
+  try {
+    updateProfileTags();
+  } catch(e) {
+    // 忽略标签更新错误，防止阻断弹窗关闭
+  }
+  
+  closeSettings();
+}
+
+function updateProfileTags() {
+  const tagsContainer = document.getElementById('profileTags');
+  if (!tagsContainer) return; // 防御性判断：如果主界面标签已被隐藏/删除，则不执行
+  
+  const tools = settings.tools.split(',').map(t => t.trim()).filter(Boolean);
+  const toolEmojis = {'空气炸锅':'🌬','蒸锅':'🥘','烤箱':'🫙','炒锅':'🔥','微波炉':'📡','电饭锅':'🍚'};
+  let html = `<span class="tag">🏪 ${settings.store}</span>`;
+  if (settings.avoid) html += `<span class="tag">🚫 不吃${settings.avoid}</span>`;
+  html += `<span class="tag">🇨🇳 ${settings.taste.split('，')[0]}</span>`;
+  tools.forEach(t => html += `<span class="tag green">${toolEmojis[t]||'🔧'} ${t}</span>`);
+  tagsContainer.innerHTML = html;
+}
+
+// ============ AI UTILS ============
+// 统一的 JSON 净化与解析函数
+function parseAIJSON(rawText) {
+  let jsonStr = rawText;
+  
+  // 1. 如果大模型用 Markdown 代码块包裹了 JSON，提取出来
+  const codeBlockMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (codeBlockMatch) {
+    jsonStr = codeBlockMatch[1].trim();
+  } else {
+    // 2. 如果没有代码块，直接去匹配最外层的大括号或中括号
+    const jsonMatch = jsonStr.match(/[\{\[][\s\S]*[\}\]]/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[0].trim();
+    }
+  }
+
+  // 3. 正常情况，直接解析
+  try {
+    return JSON.parse(jsonStr);
+  } catch (e) {
+    console.warn("第一次 JSON.parse 失败，尝试修复...", e.message);
+    
+    try {
+      // 修复常见的大模型 JSON 语法错误
+      let fixedStr = jsonStr;
+      
+      // 修复A：移除对象或数组尾部多余的逗号 (如 {"a": 1,} -> {"a": 1})
+      fixedStr = fixedStr.replace(/,\s*([\}\]])/g, '$1');
+      
+      // 修复B：把所有绝对不可见的控制字符去掉（排除正常用于格式化的换行 \n 和制表符 \t）
+      fixedStr = fixedStr.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]+/g, "");
+      
+      // 修复C：大模型有时会在字符串内直接换行，导致 JSON 不合法。
+      // 这里通过替换把真实的换行替换为安全空格（格式化的换行也会被替换，但 JSON 解析器不介意缺少格式化换行）
+      fixedStr = fixedStr.replace(/\n/g, " ");
+      fixedStr = fixedStr.replace(/\r/g, "");
+      fixedStr = fixedStr.replace(/\t/g, " ");
+
+      return JSON.parse(fixedStr);
+    } catch (e2) {
+      // 终极 Fallback：借用 JS 引擎宽松的语法解析对象（能容忍键名没引号等错误）
+      try {
+        return (new Function("return " + jsonStr))();
+      } catch (evalError) {
+        console.error("AI 返回的原始文本:", rawText);
+        throw new Error("AI 返回的格式错误");
+      }
+    }
+  }
+}
+
+async function callAI(prompt, systemPrompt) {
+  if (!settings.apikey) {
+    openSettings();
+    throw new Error('请先在设置中配置 SiliconFlow API Key');
+  }
+  
+  // 清理可能误复制的中文或不可见字符
+  const cleanApiKey = settings.apikey.replace(/[^\x20-\x7E]/g, '').trim();
+  
+  const response = await fetch("https://api.siliconflow.cn/v1/chat/completions", {
+    method: "POST",
+    headers: { 
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${cleanApiKey}`
+    },
+    body: JSON.stringify({
+      model: "deepseek-ai/DeepSeek-V3",
+      max_tokens: 2000,
+      messages: [
+        { role: "system", content: systemPrompt || "你是一个专业的备餐规划师，帮助中国上班族高效规划饮食。" },
+        { role: "user", content: prompt }
+      ]
+    })
+  });
+  const data = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(data.error?.message || `HTTP ${response.status} ${response.statusText}`);
+  }
+  
+  if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+    console.error("API 返回异常数据:", data);
+    throw new Error("AI 返回数据格式异常，请稍后重试或检查 API Key");
+  }
+  
+  return data.choices[0].message.content;
+}
+
+function getUserContext() {
+  return `用户信息：
+- 采购渠道：${settings.store}
+- 不吃食材：${settings.avoid}
+- 口味偏好：${settings.taste}
+- 可用厨具：${settings.tools}
+- 每顿最多时间：${settings.time}
+- 用餐人数：${settings.people}`;
+}
+
+// ============ LOADING ANIMATION ============
+const loadingTexts = [
+  "正在为牛马调配优质饲料...",
+  "疯狂赋能空气炸锅中...",
+  "正在计算如何把洗锅步骤清零...",
+  "别急，AI 大厨正在寻找捷径...",
+  "正在规划一套完美的摸鱼备餐法...",
+  "尝试用最少的力气做出最高级的样子...",
+  "正在对齐本周的蛋白质颗粒度...",
+  "马上就好，再等一个呼吸的时间..."
+];
+const loadingEmojis = ['🍆', '🍝', '🥦', '🍤', '🥩', '🍳', '🥗', '🍗', '🥘', '🍱'];
+
+let loadingInterval;
+
+function startLoadingAnim(containerId, initialText) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = `
+    <div class="loading">
+      <div class="loading-progress" id="l-prog-${containerId}">
+      </div>
+      <p style="transition: all 0.3s ease;"></p>
+    </div>
+  `;
+  
+  let step = 0;
+
+  function tick() {
+    const progEl = document.getElementById(`l-prog-${containerId}`);
+    const currentPEl = document.querySelector(`#${containerId} .loading p`);
+    
+    if(progEl) {
+      const nextEmoji = loadingEmojis[step % loadingEmojis.length];
+      const span = document.createElement('span');
+      span.className = 'prog-emoji';
+      span.textContent = nextEmoji;
+      
+      progEl.insertBefore(span, progEl.firstChild);
+      
+      const children = Array.from(progEl.children);
+      const activeChildren = children.filter(c => !c.classList.contains('leaving'));
+      
+      if (activeChildren.length > 5) {
+         const lastChild = activeChildren[activeChildren.length - 1];
+         lastChild.classList.add('leaving');
+         setTimeout(() => {
+           if(progEl.contains(lastChild)) {
+             progEl.removeChild(lastChild);
+           }
+         }, 500); // 稍微延长等待离场动画结束
+      }
+    }
+    
+    // 强制文字轮换和食物出的节奏对齐：每 3 个食物换一次字
+    if(currentPEl && step % 3 === 0) { 
+      const textIdx = Math.floor(step / 3);
+      currentPEl.style.transform = 'scale(0.95)';
+      currentPEl.style.opacity = '0.5';
+      setTimeout(() => {
+        currentPEl.textContent = loadingTexts[textIdx % loadingTexts.length];
+        currentPEl.style.transform = 'scale(1)';
+        currentPEl.style.opacity = '1';
+        currentPEl.style.transition = 'all 0.3s ease';
+      }, 150);
+    }
+    step++;
+  }
+
+  // 立即执行第一次，确保文字和第一个图标同步出来
+  tick();
+  
+  // 放慢出食物的节奏，从 600ms 降为 800ms
+  loadingInterval = setInterval(tick, 800);
+}
+
+function stopLoadingAnim() {
+  if (loadingInterval) clearInterval(loadingInterval);
+}
+
+// ============ PRE-FETCH RECIPES (Background Optimization) ============
+// 在生成周计划后，在后台悄悄并发请求生成所有菜品的食谱缓存
+async function prefetchRecipes(plan) {
+  if (!plan || !plan.days) return;
+  
+  const allMeals = [];
+  plan.days.forEach(d => {
+    d.meals.forEach(m => {
+      allMeals.push({ day: d.day, ...m });
+    });
+  });
+
+  // 并发请求数量控制（避免一次发太多请求被 API 拦截或卡死浏览器）
+  const CONCURRENCY_LIMIT = 3;
+  let index = 0;
+
+  async function worker() {
+    while (index < allMeals.length) {
+      const meal = allMeals[index++];
+      const key = `${meal.day}-${meal.type}-${meal.name}`;
+      
+      // 如果已经缓存了，跳过
+      if (recipeCache[key]) continue;
+      
+      const prompt = `${getUserContext()}
+请为「${meal.name}」生成一份详细的极简烹饪食谱。
+厨具：${meal.tool || '不限'}
+要求：适合上班族，不含${settings.avoid}，${settings.people}份量。
+如果这顿饭包含多个不同的菜，请在"dishes"数组中分别单独列出每道菜的烹饪步骤。
+${meal.prepAhead ? '可预制，请说明预制/复热方法。' : ''}
+严格返回JSON：{"name":"","time":"总时间","difficulty":"简单","tool":"","ingredients":[{"name":"","amount":""}],"dishes":[{"name":"具体菜名","steps":["步骤1"]}],"tip":"","prepAheadNote":""}`;
+
+      try {
+        // 这里静默调用，不阻塞主线程，不更新UI
+        const response = await fetch("https://api.siliconflow.cn/v1/chat/completions", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${settings.apikey.replace(/[^\x20-\x7E]/g, '').trim()}`
+          },
+          body: JSON.stringify({
+            model: "deepseek-ai/DeepSeek-V3",
+            max_tokens: 1500,
+            messages: [
+              { role: "system", content: "你是一个厨师，只返回合法JSON。" },
+              { role: "user", content: prompt }
+            ]
+          })
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.choices && data.choices[0] && data.choices[0].message) {
+            let rawStr = data.choices[0].message.content;
+            recipeCache[key] = parseAIJSON(rawStr);
+            saveToStorage(); // 预加载完成后立即保存到本地存储
+            console.log(`Prefetch done: ${meal.name}`);
+          }
+        }
+      } catch (e) {
+        console.warn(`Prefetch failed for ${meal.name}:`, e);
+      }
+    }
+  }
+
+  // 启动并发 workers
+  const workers = [];
+  for (let i = 0; i < Math.min(CONCURRENCY_LIMIT, allMeals.length); i++) {
+    workers.push(worker());
+  }
+}
+
+// 预加载采购清单数据
+let prefetchShopData = null;
+async function prefetchShopList(plan) {
+  if (!plan || !plan.days) return;
+  const dishes = plan.days.flatMap(d => d.meals.map(m => m.name)).join('、');
+  const planContext = `根据本周计划的菜品（${dishes}），`;
+  
+  const prompt = `${getUserContext()}
+${planContext}请为我生成一份在${settings.store}的采购清单，适合${settings.people}，${settings.time}备餐。
+要求：按食材分类，不含${settings.avoid}，注明用量，覆盖一周用量。
+只返回极简JSON：{"c":[{"n":"类别名","e":"emoji","i":[{"n":"食材名","q":"用量"}]}]}`;
+
+  try {
+    const response = await fetch("https://api.siliconflow.cn/v1/chat/completions", {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${settings.apikey.replace(/[^\x20-\x7E]/g, '').trim()}`
+      },
+      body: JSON.stringify({
+        model: "deepseek-ai/DeepSeek-V3",
+        max_tokens: 1500,
+        messages: [
+          { role: "system", content: "你是一个助手，只返回合法JSON。" },
+          { role: "user", content: prompt }
+        ]
+      })
+    });
+    if (response.ok) {
+      const data = await response.json();
+      if (data.choices && data.choices[0] && data.choices[0].message) {
+        let rawStr = data.choices[0].message.content;
+        const minShop = parseAIJSON(rawStr);
+        // 映射回原结构
+        prefetchShopData = {
+          categories: (minShop.c || minShop.categories || []).map(cat => ({
+            name: cat.n || cat.name,
+            emoji: cat.e || cat.emoji || '📦',
+            items: (cat.i || cat.items || []).map(item => ({
+              name: item.n || item.name,
+              qty: item.q || item.qty || ''
+            }))
+          }))
+        };
+        console.log('Shop list prefetched');
+      }
+    }
+  } catch (e) {
+    console.warn('Prefetch shop list failed:', e);
+  }
+}
+
+// ============ PLAN ============
+async function refreshSingleMeal(day, mealType) {
+  const targetBtn = event.currentTarget;
+  targetBtn.textContent = '…';
+  targetBtn.style.pointerEvents = 'none';
+
+  // 收集当前周计划中所有的菜品名，避免重复
+  const currentDishes = [];
+  if (currentPlan && currentPlan.days) {
+    currentPlan.days.forEach(d => {
+      d.meals.forEach(m => currentDishes.push(m.name));
+    });
+  }
+
+  const prompt = `${getUserContext()}
+  
+我正在看你给我生成的周计划，但我不太喜欢【${day}】的【${mealType}】。
+请给我重新推荐 1 道菜替换它。
+
+要求：
+1. 仍然要符合之前的懒人免看火/少洗锅要求。
+2. 尽量与本周其他菜品复用食材，避免买太多杂七杂八的东西浪费。
+3. **不能**是这些菜：${currentDishes.join('、')}
+
+严格按以下JSON格式返回：
+{
+  "type": "${mealType}",
+  "name": "菜名",
+  "note": "简短备注",
+  "tool": "厨具",
+  "prepAhead": true或false
+}`;
+
+  try {
+    const raw = await callAI(prompt, '你是备餐专家，只返回合法JSON，不包含额外说明。');
+    const newMeal = parseAIJSON(raw);
+    
+      // 更新 currentPlan 数据
+      const dayObj = currentPlan.days.find(d => d.day === day);
+      if (dayObj) {
+        const mealIndex = dayObj.meals.findIndex(m => m.type === mealType);
+        if (mealIndex !== -1) {
+          dayObj.meals[mealIndex] = newMeal;
+        }
+      }
+      saveToStorage();
+      
+      // 重新渲染计划网格
+      renderPlan(currentPlan);
+      
+      // 联动：提示采购清单可能需要更新
+      if (shopItems.length > 0) {
+        const btnShop = document.getElementById('genShopBtn');
+        btnShop.innerHTML = '⚠️ 计划已变，重新生成采购清单';
+        btnShop.style.background = 'var(--accent2)';
+      }
+    } catch(e) {
+    alert("替换失败: " + e.message);
+    targetBtn.textContent = '🔄 换';
+    targetBtn.style.pointerEvents = 'auto';
+  }
+}
+
+async function generatePlan() {
+  const planDaysVal = document.getElementById('planDays').value;
+  const daysText = planDaysVal === 'weekday' ? '周中（周一到周五）' : '周末（周六和周日）';
+  
+  const meals = document.getElementById('planMeals').value;
+  const mealMap = { lunch:'只有午餐', dinner:'只有晚餐', lunch_dinner:'午餐和晚餐', all:'早中晚三餐' };
+
+  const btn = document.getElementById('genPlanBtn');
+  btn.disabled = true;
+  btn.textContent = '规划中…';
+
+  startLoadingAnim('planContent', '正在规划本周饮食...');
+
+  // 收集历史菜单用于排重
+  const historyDishes = [];
+  if (currentPlan && currentPlan.days) {
+    currentPlan.days.forEach(d => {
+      d.meals.forEach(m => historyDishes.push(m.name));
+    });
+  }
+  const avoidHistory = historyDishes.length > 0 ? `\n10. **不要重复**以下最近吃过的菜品：${historyDishes.slice(0, 15).join('、')}` : '';
+
+  const prompt = `${getUserContext()}
+
+请为我规划${daysText}的备餐计划，包含${mealMap[meals]}。
+
+核心要求：
+1. **免看火优先**：极大幅度增加空气炸锅、烤箱、蒸锅、电饭煲的使用比例，尽量减少需要人一直站在灶台前翻炒的菜。
+2. **少洗锅优先**：多安排“一锅出”（如焖饭、大烩菜）、烤盘垫锡纸直接烤等吃完好清理的菜式。
+3. **营养均衡**：每顿饭必须包含【蛋白质】(肉/蛋/奶/豆制品) + 【蔬菜】 + 【主食】的合理搭配。如果是一锅出/焖饭，里面必须包含这三类食材。
+4. **精简食材种类**：不同天之间的菜品尽量复用核心食材（比如鸡胸肉、某一种蔬菜多吃几顿），避免为了做一道菜买一堆只用一次的配料，减少浪费！
+5. 符合中国胃口，家常菜为主；不含：${settings.avoid}
+6. 仅限这些厨具：${settings.tools}
+7. 每顿实际操作(非机器运行)时间不超过${settings.time}
+8. 适合${settings.people}份量，优先${settings.store}的食材
+9. 周末可以适当预制，工作日快速加热${avoidHistory}
+
+请严格按照以下极简JSON格式返回，不要输出任何解释文字，以加快生成速度：
+{"days":[{"d":"周一","m":[{"t":"午餐","n":"菜名","note":"简短备注","tool":"厨具","p":true}]}]}
+
+说明：
+- "d" 代表周几（如果是周中请返回“周一”至“周五”，周末请返回“周六”和“周日”）
+- "m" 代表餐食数组
+- "t" 代表类型（午餐/晚餐）
+- "n" 代表菜名
+- "p" 代表是否可以提前预制 (true/false)
+只返回JSON！`;
+
+  try {
+    const raw = await callAI(prompt, '你是备餐规划专家，只返回合法JSON，不包含任何额外说明。');
+    
+    // 适配极简版的 JSON 结构回原本的结构
+    const minPlan = parseAIJSON(raw);
+    const plan = {
+      days: minPlan.days.map(day => ({
+        day: day.d || day.day, // 兼容 AI 可能没完全听话的情况
+        meals: (day.m || day.meals).map(meal => ({
+          type: meal.t || meal.type,
+          name: meal.n || meal.name,
+          note: meal.note || '',
+          tool: meal.tool || '',
+          prepAhead: !!(meal.p || meal.prepAhead)
+        }))
+      }))
+    };
+
+    currentPlan = plan;
+    
+    // 保存到历史记录 (最多5条)
+    const now = new Date();
+    planHistory.unshift({
+      id: now.getTime(),
+      date: `${now.getMonth()+1}月${now.getDate()}日 ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`,
+      plan: plan
+    });
+    if (planHistory.length > 5) planHistory = planHistory.slice(0, 5);
+    
+    saveToStorage();
+    stopLoadingAnim();
+    renderPlan(plan);
+    
+    // 生成完计划后，后台静默预加载菜谱和采购清单
+    setTimeout(() => {
+      prefetchRecipes(plan);
+      prefetchShopList(plan);
+    }, 1000);
+  } catch(e) {
+    stopLoadingAnim();
+    document.getElementById('planContent').innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><h3>生成失败</h3><p>${e.message}</p></div>`;
+  }
+  btn.disabled = false;
+  btn.textContent = '✨ AI 生成计划';
+}
+
+function renderPlan(plan) {
+  const todayIndex = new Date().getDay();
+  const todayStr = ['周日','周一','周二','周三','周四','周五','周六'][todayIndex];
+  const toolEmoji = {'空气炸锅':'🌬','蒸锅':'🥘','炒锅':'🔥','烤箱':'🫙','微波炉':'📡','电饭锅':'🍚','不用加热':'❄️'};
+
+  // Store meals globally for recipe lookup
+  window._planMeals = {};
+  plan.days.forEach(d => {
+    d.meals.forEach(m => {
+      const key = `${d.day}-${m.type}-${m.name}`;
+      window._planMeals[key] = { ...m, day: d.day };
+    });
+  });
+
+  let html = `<div style="font-size:11px;color:var(--ink2);margin-bottom:10px;text-align:right">💡 点击任意菜品查看做法</div>`;
+  html += `<div class="week-grid">`;
+  plan.days.forEach(d => {
+    const isToday = d.day === todayStr;
+    html += `<div class="day-col ${isToday?'today':''}">
+      <div class="day-header">${d.day}${isToday ? ' (今天)' : ''}</div>`;
+    d.meals.forEach(m => {
+      const emoji = toolEmoji[m.tool] || '🍽';
+      const key = encodeURIComponent(`${d.day}-${m.type}-${m.name}`);
+      html += `<div class="meal-slot" onclick="openRecipeModal('${key}')">
+        <div class="meal-type">${m.type}</div>
+        <div class="meal-name">${m.name}</div>
+        ${m.note ? `<div class="meal-note">${m.note}</div>` : ''}
+        <span class="meal-tool">${emoji} ${m.tool||''}</span>
+        ${m.prepAhead ? '<span class="meal-tool" style="background:var(--green-bg);color:var(--green)">可预制</span>' : ''}
+        <div class="meal-slot-hint">
+          <span onclick="event.stopPropagation(); openRecipeModal('${key}')">📖 查看做法</span>
+          <span onclick="event.stopPropagation(); refreshSingleMeal('${d.day}', '${m.type}')">🔄 换个菜</span>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  html += `</div>`;
+  html += `<div style="margin-top:12px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+    <button class="btn-sec" onclick="switchTab('shop');generateShopList()">📦 生成采购清单</button>
+    <button class="btn-sec" onclick="generatePlan()">🔄 重新生成</button>
+  </div>`;
+  document.getElementById('planContent').innerHTML = html;
+}
+
+
+// ============ TONIGHT ============
+async function generateTonight() {
+  const btn = document.getElementById('btnTonight');
+  btn.disabled = true;
+  btn.innerHTML = '正在摇号...';
+
+  startLoadingAnim('tonightContent', '正在翻阅免看火神仙菜谱...');
+
+  const prompt = `${getUserContext()}
+
+我不想看长长的计划了，直接告诉我今晚吃什么！
+要求：
+1. 绝对的懒人福音：必须是【免看火】（放进机器定好时就去干别的）或者【一锅出】（饭菜一锅焖，少洗碗）。
+2. 只需推荐 1 道菜（或者一荤一素搭配好的一锅出）。
+3. **营养搭配**：推荐的这顿饭里，必须包含【蛋白质】和【蔬菜】，并且适合配主食（或者自带主食）。
+4. 直接给我这道菜的详细做法。
+
+严格按以下JSON格式返回，不要输出任何其他文字：
+{
+  "name": "菜名(最好带上特点如'懒人电饭煲排骨焖饭')",
+  "time": "准备x分钟，机器运行x分钟",
+  "difficulty": "极简",
+  "tool": "使用的厨具",
+  "ingredients": [
+    {"name": "食材名", "amount": "用量"}
+  ],
+  "dishes": [
+    {
+      "name": "具体菜名",
+      "steps": ["详细步骤1", "步骤2"]
+    }
+  ],
+  "tip": "少洗锅/免看火小贴士（30字内）"
+}`;
+
+  try {
+    const raw = await callAI(prompt, '你是懒人救星厨师，只返回合法JSON。');
+    const r = parseAIJSON(raw);
+    
+    const diffColor = 'var(--green)';
+    let html = `
+      <div class="recipe-card" style="border: 2px solid var(--accent); transform: scale(1.02); margin-top: 10px;">
+        <div class="recipe-header" style="margin-bottom: 15px;">
+          <div class="recipe-name" style="font-size: 20px; color: var(--accent);">🎉 ${r.name}</div>
+        </div>
+        <div class="rm-meta-row">
+          <span class="rm-meta">⏱ ${r.time}</span>
+          <span class="rm-meta">🔧 ${r.tool}</span>
+          <span class="rm-meta" style="color:${diffColor}">● ${r.difficulty}</span>
+        </div>
+        <div class="rm-section-title">食材准备</div>
+        <div class="rm-ingredients">
+          ${r.ingredients.map(i => `<span class="rm-ing">${i.name} <strong>${i.amount}</strong></span>`).join('')}
+        </div>
+        <div class="rm-section-title">开始摸鱼 (做法)</div>
+        ${renderStepsHtml(r)}
+        ${r.tip ? `<div class="rm-tip" style="margin-top:15px">💡 <strong>懒人贴士：</strong>${r.tip}</div>` : ''}
+        <button class="btn-sec" onclick="generateTonight()" style="width:100%; margin-top: 20px; text-align:center;">不喜欢？换一个 🎲</button>
+      </div>`;
+      
+    stopLoadingAnim();
+    document.getElementById('tonightContent').innerHTML = html;
+  } catch(e) {
+    stopLoadingAnim();
+    document.getElementById('tonightContent').innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><h3>摇号失败</h3><p>${e.message}</p></div>`;
+  }
+  btn.disabled = false;
+  btn.innerHTML = '🎲 一键决定今晚吃什么';
+}
+
+// ============ RECIPE MODAL ============
+async function openRecipeModal(encodedKey) {
+  const key = decodeURIComponent(encodedKey);
+  const meal = window._planMeals && window._planMeals[key];
+  if (!meal) return;
+
+  document.getElementById('rmTitle').textContent = meal.name;
+  document.getElementById('rmBody').innerHTML = `<div class="rm-loading">
+    <div class="bouncing-dots"><span></span><span></span><span></span></div>
+    <p style="margin-top:24px;font-size:16px;font-weight:600;color:var(--ink);">AI 正在生成「${meal.name}」的详细食谱…</p>
+  </div>`;
+  document.getElementById('recipeModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  if (recipeCache[key]) {
+    renderRecipeModal(recipeCache[key]);
+    return;
+  }
+
+  const prompt = `${getUserContext()}
+
+请为「${meal.name}」生成一份详细的烹饪食谱。
+厨具：${meal.tool || '不限'}
+场景：上班族快手备餐
+不含食材：${settings.avoid}
+用餐人数：${settings.people}
+如果这顿饭包含多个不同的菜（如一荤一素），请务必在"dishes"数组中单独拆分每道菜的烹饪步骤，让步骤清晰易懂。
+${meal.prepAhead ? '这道菜可以提前预制，请说明预制和复热方法。' : ''}
+
+只返回合法JSON，不要其他文字：
+{
+  "name": "菜名",
+  "time": "总时间",
+  "difficulty": "简单/中等",
+  "tool": "厨具",
+  "ingredients": [
+    {"name": "食材名", "amount": "用量"}
+  ],
+  "dishes": [
+    {
+      "name": "具体菜名（如：空气炸锅孜然羊肉）",
+      "steps": ["详细步骤1", "步骤2"]
+    }
+  ],
+  "tip": "上班族备餐小技巧（30字内）",
+  "prepAheadNote": "预制说明（如果适合预制才写，否则为空字符串）"
+}`;
+
+  try {
+    const raw = await callAI(prompt, '你是专业厨师，只返回合法JSON，步骤详细实用。');
+    
+    const data = parseAIJSON(raw);
+    recipeCache[key] = data;
+    saveToStorage(); // 保存到本地存储
+    renderRecipeModal(data);
+  } catch(e) {
+    document.getElementById('rmBody').innerHTML = `<div style="text-align:center;padding:30px;color:var(--ink2)">生成失败：${e.message}</div>`;
+  }
+}
+
+function renderStepsHtml(r) {
+  if (r.dishes && r.dishes.length > 0) {
+    return r.dishes.map(d => `
+      <div style="font-weight:700; font-size:18px; color:var(--ink); margin: 20px 0 12px; display:flex; align-items:center; gap:8px;">
+        <span style="font-size:16px">🍳</span> ${d.name}
+      </div>
+      <ol class="rm-steps" style="margin-top:0;">
+        ${d.steps.map(s => `<li>${s}</li>`).join('')}
+      </ol>
+    `).join('');
+  } else if (r.steps) {
+    // 兼容以前旧的缓存数据
+    return `<ol class="rm-steps">${r.steps.map(s => `<li>${s}</li>`).join('')}</ol>`;
+  }
+  return '';
+}
+
+function renderRecipeModal(r) {
+  const diffColor = r.difficulty === '简单' ? 'var(--green)' : 'var(--accent)';
+  let html = `
+    <div class="rm-meta-row">
+      <span class="rm-meta">⏱ ${r.time}</span>
+      <span class="rm-meta">🔧 ${r.tool}</span>
+      <span class="rm-meta" style="color:${diffColor}">● ${r.difficulty}</span>
+    </div>
+    <div class="rm-section-title">食材清单</div>
+    <div class="rm-ingredients">
+      ${r.ingredients.map(i => `<span class="rm-ing">${i.name} <strong>${i.amount}</strong></span>`).join('')}
+    </div>
+    <div class="rm-section-title">烹饪步骤</div>
+    ${renderStepsHtml(r)}
+  `;
+  if (r.prepAheadNote) {
+    html += `<div class="rm-tip">❄️ <strong>预制建议：</strong>${r.prepAheadNote}</div>`;
+  }
+  if (r.tip) {
+    html += `<div class="rm-tip" style="margin-top:8px">💡 <strong>备餐小贴士：</strong>${r.tip}</div>`;
+  }
+  document.getElementById('rmBody').innerHTML = html;
+}
+
+function closeRecipeModal() {
+  document.getElementById('recipeModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function closeRecipeIfOverlay(e) {
+  if (e.target === document.getElementById('recipeModal')) closeRecipeModal();
+}
+
+// ============ HISTORY MODAL ============
+function openHistoryModal() {
+  const list = document.getElementById('historyList');
+  if (!planHistory || planHistory.length === 0) {
+    list.innerHTML = '<div style="text-align:center;color:var(--ink2);padding:30px;">暂无历史记录<br><span style="font-size:12px;margin-top:8px;display:block">生成的新计划会自动保存在这里</span></div>';
+  } else {
+    list.innerHTML = planHistory.map((h, i) => {
+      // 提取核心食材/菜名生成标签墙
+      const tags = [];
+      if (h.plan && h.plan.days) {
+        h.plan.days.forEach(d => {
+          d.meals.forEach(m => {
+            // 简单去掉后面的“+米饭”等，让标签更清爽
+            const cleanName = m.name.split('+')[0];
+            if (tags.length < 5 && !tags.includes(cleanName)) {
+              tags.push(cleanName);
+            }
+          });
+        });
+      }
+      
+      const tagHtml = tags.map(t => `<span style="background:var(--surface2); color:var(--ink2); font-size:12px; padding:4px 8px; border-radius:6px; white-space:nowrap;">${t}</span>`).join('');
+      
+      return `
+      <div style="padding:16px; border:1px solid var(--border); border-radius:12px; display:flex; flex-direction:column; gap:12px; background:var(--surface);">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-weight:700; font-size:15px; color:var(--ink);">${h.date}</div>
+          <button class="btn-sec" style="font-size:13px; padding:6px 14px; color:var(--accent);" onclick="restoreHistory(${i})">🔄 恢复</button>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+          ${tagHtml}
+          ${tags.length >= 5 ? `<span style="font-size:12px; color:var(--ink2); align-self:center; margin-left:4px;">...</span>` : ''}
+        </div>
+      </div>
+    `}).join('');
+  }
+  document.getElementById('historyModal').classList.add('open');
+}
+
+function closeHistoryModal() {
+  document.getElementById('historyModal').classList.remove('open');
+}
+
+function closeHistoryIfOverlay(e) {
+  if (e.target === document.getElementById('historyModal')) closeHistoryModal();
+}
+
+function restoreHistory(index) {
+  if (!planHistory[index]) return;
+  
+  const confirmRestore = confirm("恢复历史计划会覆盖当前的周计划和采购清单，是否继续？");
+  if (!confirmRestore) return;
+  
+  // 恢复数据
+  currentPlan = planHistory[index].plan;
+  
+  // 清空现有的采购清单，因为计划已经改变
+  shopItems = [];
+  prefetchShopData = null;
+  
+  saveToStorage();
+  
+  // 重新渲染UI
+  renderPlan(currentPlan);
+  renderShopList(null);
+  
+  closeHistoryModal();
+  alert("计划已恢复！请前往「采购清单」重新生成清单。");
+}
+
+// ============ SHOPPING ============
+async function generateShopList() {
+  const btn = document.getElementById('genShopBtn');
+  btn.disabled = true;
+  btn.textContent = '生成中…';
+
+  document.getElementById('shopContent').innerHTML = `<div class="loading"><div class="spinner"></div><p>AI 正在整理采购清单…</p></div>`;
+
+  let planContext = '';
+  if (currentPlan) {
+    const dishes = currentPlan.days.flatMap(d => d.meals.map(m => m.name)).join('、');
+    planContext = `根据本周计划的菜品（${dishes}），`;
+  }
+
+  const prompt = `${getUserContext()}
+
+${planContext}请为我生成一份在${settings.store}的采购清单，适合${settings.people}，${settings.time}备餐。
+
+要求：
+1. 按食材分类（肉类/水产、蔬菜、豆制品/蛋白、半成品/冷冻、常备/主食、常备/调料）
+2. **豆腐/腐竹/豆干**必须归类到“豆制品/蛋白”，不要放到主食/调料。
+3. “常备/主食、常备/调料”尽量不要列出（除非明确本周必须新买），如果列出请在 note 里写“常备，缺了再买”。
+4. 不含以下食材：${settings.avoid}
+5. 注明大概用量（如"鸡胸肉 500g"）
+6. 优先推荐山姆/盒马的招牌产品或性价比高的品类
+7. 覆盖一周用量
+
+只返回合法JSON，格式如下，不要输出其他文字：
+{
+  "categories": [
+    {
+      "name": "肉类/水产",
+      "emoji": "🥩",
+      "items": [
+        {"name": "鸡胸肉", "qty": "500g", "note": "可做3-4顿"}
+      ]
+    }
+  ]
+}`;
+
+  try {
+    const raw = await callAI(prompt, '你是备餐规划专家，只返回合法JSON。');
+    const data = parseAIJSON(raw);
+    shopItems = [];
+    data.categories.forEach(cat => {
+      cat.items.forEach(item => {
+        const normalized = normalizeShopItem(item.name, cat.name, cat.emoji);
+        shopItems.push({ ...item, cat: normalized.cat, catEmoji: normalized.emoji, pantry: normalized.pantry, checked: false, id: Math.random().toString(36).slice(2) });
+      });
+    });
+    saveToStorage();
+    renderShopList(data.categories);
+  } catch(e) {
+    document.getElementById('shopContent').innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><h3>生成失败</h3><p>${e.message}</p></div>`;
+  }
+  btn.disabled = false;
+  btn.textContent = '✨ 生成采购清单';
+}
+
+function renderShopList(categories) {
+  if (shopItems.length === 0) return;
+  const cats = {};
+  shopItems.forEach(i => {
+    if (hidePantry && i.pantry) return;
+    if (!cats[i.cat]) cats[i.cat] = { name: i.cat, emoji: i.catEmoji, items: [] };
+    cats[i.cat].items.push(i);
+  });
+  categories = Object.values(cats).map(c => ({ name: c.name, emoji: c.emoji, items: c.items }));
+  if (categories.length === 0) {
+    document.getElementById('shopContent').innerHTML = `<div class="empty"><div class="empty-icon">🧺</div><h3>本周无需采购</h3><p>当前仅剩常备主食/调料（已隐藏）</p></div>`;
+    return;
+  }
+
+  let html = '';
+  categories.forEach(cat => {
+    html += `<div class="shop-section">
+      <div class="shop-section-title">${cat.emoji || '📦'} ${cat.name}</div>
+      <div class="shop-grid">`;
+    (cat.items || []).forEach(item => {
+      const saved = shopItems.find(s => s.name === item.name);
+      const checked = saved ? saved.checked : false;
+      const id = saved ? saved.id : item.id || Math.random().toString(36).slice(2);
+      html += `<div class="shop-item ${checked?'checked':''}" onclick="toggleItem('${id}')" id="si-${id}">
+        <div class="shop-cb">${checked ? '<span class="shop-cb-check">✓</span>' : ''}</div>
+        <div class="shop-item-name">${item.name}</div>
+        <div class="shop-item-qty">${item.qty||''}</div>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+  document.getElementById('shopContent').innerHTML = html;
+}
+
+function toggleItem(id) {
+  const item = shopItems.find(i => i.id === id);
+  if (item) { item.checked = !item.checked; saveToStorage(); }
+  const el = document.getElementById('si-' + id);
+  if (el) {
+    el.classList.toggle('checked');
+    el.querySelector('.shop-cb').innerHTML = el.classList.contains('checked') ? '<span class="shop-cb-check">✓</span>' : '';
+  }
+}
+function clearChecked() {
+  shopItems.forEach(i => i.checked = false);
+  saveToStorage();
+  document.querySelectorAll('.shop-item.checked').forEach(el => {
+    el.classList.remove('checked');
+    el.querySelector('.shop-cb').innerHTML = '';
+  });
+}
+function copyShopList() {
+  if (shopItems.length === 0) {
+    alert('采购清单为空，请先生成清单！');
+    return;
+  }
+  const lines = ['📋 本周采购清单\n'];
+  const cats = {};
+  shopItems.filter(i => !i.checked && !(hidePantry && i.pantry)).forEach(i => {
+    if (!cats[i.cat]) cats[i.cat] = [];
+    // 苹果备忘录对富文本待办列表的支持，如果是纯文本，它不支持自动转换
+    // 最好的方式是使用 Unicode 待办符号 ◯ ，用户视觉上是一个未勾选的圆圈
+    cats[i.cat].push(`◯ ${i.name} ${i.qty||''}`);
+  });
+  Object.entries(cats).forEach(([cat, items]) => {
+    lines.push(`【${cat}】`);
+    lines.push(...items);
+    lines.push('');
+  });
+  
+  const textToCopy = lines.join('\n');
+  
+  // 兼容手机端和电脑端的复制逻辑
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(textToCopy)
+      .then(() => alert('已复制到剪贴板！可直接发给家人或粘贴到购物App'))
+      .catch(err => fallbackCopyTextToClipboard(textToCopy));
+  } else {
+    fallbackCopyTextToClipboard(textToCopy);
+  }
+}
+
+function fallbackCopyTextToClipboard(text) {
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  // 避免滚动到页面底部
+  textArea.style.top = "0";
+  textArea.style.left = "0";
+  textArea.style.position = "fixed";
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  try {
+    const successful = document.execCommand('copy');
+    if (successful) {
+      alert('已复制到剪贴板！可直接发给家人或粘贴到购物App');
+    } else {
+      alert('复制失败，请手动选择复制。');
+    }
+  } catch (err) {
+    alert('浏览器不支持自动复制，请手动复制。');
+  }
+  document.body.removeChild(textArea);
+}
+
+// ============ AI CHAT ============
+function fillPrompt(text) {
+  document.getElementById('aiQuestion').value = text;
+  document.getElementById('aiQuestion').focus();
+}
+
+async function askAI() {
+  const q = document.getElementById('aiQuestion').value.trim();
+  if (!q) return;
+  const btn = document.getElementById('askBtn');
+  btn.disabled = true;
+  btn.textContent = '…';
+
+  const userContext = getUserContext();
+  const historyHtml = document.getElementById('aiHistory');
+  
+  // Add user message
+  historyHtml.innerHTML += `<div style="background:var(--surface2);border-radius:8px;padding:12px 14px;margin-bottom:10px;font-size:13px;border:1px solid var(--border)"><strong style="font-size:11px;color:var(--ink2);display:block;margin-bottom:4px">你</strong>${q}</div>`;
+  document.getElementById('aiQuestion').value = '';
+
+  const loadingDiv = document.createElement('div');
+  loadingDiv.className = 'ai-response';
+  loadingDiv.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px"></div>思考中…';
+  historyHtml.appendChild(loadingDiv);
+  loadingDiv.scrollIntoView({ behavior: 'smooth' });
+
+  try {
+    const answer = await callAI(
+      `${userContext}\n\n用户问题：${q}`,
+      '你是专业的备餐助手，帮助中国上班族解决饮食规划问题。回答简洁实用，重点突出，使用中文。'
+    );
+    loadingDiv.textContent = answer;
+  } catch(e) {
+    loadingDiv.textContent = '请求失败：' + e.message;
+  }
+  btn.disabled = false;
+  btn.textContent = '发送';
+}
+
+// Enter to send
+document.getElementById('aiQuestion').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); askAI(); }
+});
+
+// ============ INIT ============
+updateProfileTags();
+</script>
+</body>
+</html>
