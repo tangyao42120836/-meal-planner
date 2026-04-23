@@ -652,18 +652,18 @@
     display: flex;
     gap: 20px;
     padding: 20px;
-    overflow: hidden;
+    overflow-y: auto;
     flex: 1;
   }
   .cg-form {
     width: 280px;
     flex-shrink: 0;
-    overflow-y: auto;
+    overflow-y: visible;
     padding-right: 10px;
   }
   .cg-preview {
     flex: 1;
-    overflow-y: auto;
+    overflow-y: visible;
     background: var(--surface2);
     border-radius: 12px;
     padding: 20px;
@@ -673,9 +673,9 @@
     min-height: 0; /* 修复 flex 子元素滚动条失效问题 */
   }
   @media (max-width: 768px) {
-    .cover-generator-layout { flex-direction: column; overflow: auto; padding: 14px; }
-    .cg-form { width: 100%; overflow: visible; padding-right: 0; padding-bottom: 20px; }
-    .cg-preview { overflow: visible; padding: 14px; }
+    .cover-generator-layout { flex-direction: column; padding: 14px; }
+    .cg-form { width: 100%; padding-right: 0; padding-bottom: 20px; }
+    .cg-preview { padding: 14px; }
   }
   
   /* 复用 cover-generator.html 中的卡片样式 */
@@ -711,7 +711,6 @@
   }
   @media (max-width: 400px) {
     header { padding: 14px 16px; }
-  }
     .cg-cover-wrap { width: 100%; align-items: center; }
     .cg-cover-preview { transform: scale(0.85); margin-bottom: -63px; }
   }
