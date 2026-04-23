@@ -1681,8 +1681,23 @@ function renderExportCards() {
   let html = '';
   if (plan) html += buildPlanExportCard(plan, title);
   if (shopItems && shopItems.length) html += buildShopExportCard(shopItems, title, hide);
-  if (latestRecipe) html += buildRecipeExportCard(latestRecipe, title);
+  
+  // 渲染所有已缓存的食谱
+  const allRecipes = getAllCachedRecipes();
+  if (allRecipes && allRecipes.length > 0) {
+    allRecipes.forEach((recipe, idx) => {
+      html += buildRecipeExportCard(recipe, title, idx);
+    });
+  }
+  
   wrap.innerHTML = html;
+}
+
+function getAllCachedRecipes() {
+  if (!recipeCache) return [];
+  const keys = Object.keys(recipeCache);
+  if (keys.length === 0) return [];
+  return keys.map(k => recipeCache[k]);
 }
 
 function buildPlanExportCard(plan, title) {
@@ -1740,14 +1755,29 @@ function buildShopExportCard(items, title, hidePantryLocal) {
   `;
 }
 
-function buildRecipeExportCard(r, title) {
-  const cardId = 'rbCardRecipe';
+function buildRecipeExportCard(r, title, idx = 0) {
+  const cardId = 'rbCardRecipe_' + idx;
   const time = r.time || '—';
   const tool = r.tool || '—';
-  const dish = (r.dishes && r.dishes[0]) ? r.dishes[0] : null;
-  const steps = dish ? dish.steps : (r.steps || []);
-  const ing = (r.ingredients || []).slice(0, 10).map(i => `<span style="display:inline-block;background:var(--surface2);padding:4px 8px;border-radius:6px;font-size:12px;margin:0 8px 8px 0">${i.name} ${i.amount || ''}</span>`).join('');
-  const stepsHtml = steps.slice(0, 6).map((s, idx) => `<div style="font-size:13px;line-height:1.55;margin-top:10px"><span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#ff4d4f;color:#fff;font-weight:800;font-size:11px;margin-right:8px">${idx + 1}</span>${s}</div>`).join('');
+  
+  // 处理多个 dishes 的情况，把每个 dish 的步骤都合并渲染出来
+  let stepsHtml = '';
+  if (r.dishes && r.dishes.length > 0) {
+    stepsHtml = r.dishes.map(dish => {
+      const dSteps = (dish.steps || []).map((s, sIdx) => 
+        `<div style="display:flex;align-items:flex-start;font-size:13px;line-height:1.55;margin-top:10px"><span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#ff4d4f;color:#fff;font-weight:800;font-size:11px;margin-right:8px;flex-shrink:0;">${sIdx + 1}</span><span style="flex:1;">${s}</span></div>`
+      ).join('');
+      return `<div style="margin-top:16px;"><div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:4px;">🍲 ${dish.name}</div>${dSteps}</div>`;
+    }).join('');
+  } else {
+    // 兼容老的单步骤结构
+    const steps = r.steps || [];
+    stepsHtml = steps.map((s, sIdx) => 
+      `<div style="display:flex;align-items:flex-start;font-size:13px;line-height:1.55;margin-top:10px"><span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#ff4d4f;color:#fff;font-weight:800;font-size:11px;margin-right:8px;flex-shrink:0;">${sIdx + 1}</span><span style="flex:1;">${s}</span></div>`
+    ).join('');
+  }
+
+  const ing = (r.ingredients || []).map(i => `<span style="display:inline-block;background:var(--surface2);padding:4px 8px;border-radius:6px;font-size:12px;margin:0 8px 8px 0">${i.name} ${i.amount || ''}</span>`).join('');
 
   return `
     <div class="rb-card-wrap">
@@ -1764,7 +1794,7 @@ function buildRecipeExportCard(r, title) {
           <div style="margin-top:14px;font-weight:800;font-size:14px;color:var(--ink2)">🛒 食材</div>
           <div style="margin-top:10px">${ing}</div>
           <div style="margin-top:14px;font-weight:900;font-size:14px">👩‍🍳 做法</div>
-          <div style="margin-top:6px">${stepsHtml}</div>
+          <div>${stepsHtml}</div>
           ${r.tip ? `<div style="margin-top:16px;background:var(--tag-bg);color:var(--tag-ink);padding:12px;border-radius:12px;font-size:13px;line-height:1.6">💡 ${r.tip}</div>` : ''}
         </div>
         <div class="rb-footer">@备餐助手</div>
