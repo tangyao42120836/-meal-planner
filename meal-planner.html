@@ -674,8 +674,8 @@
   }
   @media (max-width: 768px) {
     .cover-generator-layout { flex-direction: column; padding: 14px; }
-    .cg-form { width: 100%; padding-right: 0; padding-bottom: 20px; }
-    .cg-preview { padding: 14px; }
+    .cg-form { width: 100%; padding-right: 0; padding-bottom: 20px; flex: none; }
+    .cg-preview { padding: 14px; flex: none; min-height: 300px; }
   }
   
   /* 复用 cover-generator.html 中的卡片样式 */
@@ -1405,7 +1405,7 @@
 
         <!-- 右侧预览 -->
         <div class="cg-preview" id="cg-preview-container">
-          <div class="empty" style="background:var(--surface); border-radius:12px; height:100%; display:flex; flex-direction:column; justify-content:center;">
+          <div class="empty" style="background:var(--surface); border-radius:12px; min-height:240px; display:flex; flex-direction:column; justify-content:center;">
             <div class="empty-icon">🎨</div>
             <h3>等待生成</h3>
             <p>点击左侧按钮，AI 将根据你的计划生成核心主题，并产出封面和文案</p>
