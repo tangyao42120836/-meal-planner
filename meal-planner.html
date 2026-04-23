@@ -1167,7 +1167,10 @@
   <div>
     <div class="logo">备餐<span>助手</span></div>
   </div>
-  <button class="header-btn" onclick="openSettings()" title="设置">⚙️</button>
+  <div style="display:flex; align-items:center; gap:8px;">
+    <button class="btn-sec" id="btn-login-status" onclick="document.getElementById('loginModal').classList.add('open')" style="padding:6px 12px; font-size:13px; border-radius:6px; background:var(--surface2);">☁️ 离线</button>
+    <button class="header-btn" onclick="openSettings()" title="设置">⚙️</button>
+  </div>
 </header>
 
 <div class="app">
@@ -1280,6 +1283,26 @@
     </div>
   </div>
 </div>
+
+  <!-- 登录弹窗 (Supabase) -->
+  <div class="overlay" id="loginModal">
+    <div class="modal">
+      <div class="modal-title">🔐 账号登录 (云端同步)</div>
+      <div class="form-group">
+        <label>邮箱</label>
+        <input type="email" id="sb-email" placeholder="example@qq.com">
+      </div>
+      <div class="form-group">
+        <label>密码</label>
+        <input type="password" id="sb-password" placeholder="******">
+      </div>
+      <div class="modal-actions" style="margin-top: 20px;">
+        <button class="btn-sec" onclick="document.getElementById('loginModal').classList.remove('open')">取消</button>
+        <button class="btn-sec" onclick="sbSignUp()">注册</button>
+        <button class="btn-gen" style="flex:1" onclick="sbSignIn()">登录并拉取数据</button>
+      </div>
+    </div>
+  </div>
 
 <!-- ========= EXPORT MODAL ========= -->
 <div class="export-modal-overlay" id="exportModal" onclick="closeExportIfOverlay(event)">
@@ -1421,6 +1444,7 @@
 
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ============ STATE ============
 let settings = {
@@ -1463,8 +1487,178 @@ function saveToStorage() {
       localStorage.setItem('mealplanner_plan', JSON.stringify(currentPlan));
     }
     localStorage.setItem('mealplanner_shop', JSON.stringify(shopItems));
+    
+    // 如果已登录 Supabase，触发防抖自动同步
+    if (sbUser) debounceSyncToCloud();
   } catch(e) {}
 }
+
+// ============ SUPABASE SYNC ============
+// 注意：你需要替换下面的 SUPABASE_URL 和 SUPABASE_KEY 为你自己的真实配置
+const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
+const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
+let supabase = null;
+let sbUser = null;
+let syncTimer = null;
+
+function initSupabase() {
+  if (SUPABASE_URL === 'YOUR_SUPABASE_URL_HERE') return; // 用户未配置
+  try {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    checkSession();
+  } catch(e) { console.warn('Supabase 初始化失败', e); }
+}
+
+async function checkSession() {
+  if (!supabase) return;
+  const { data } = await supabase.auth.getSession();
+  if (data.session) {
+    sbUser = data.session.user;
+    updateLoginStatus(true);
+    // 启动时自动拉取云端数据合并到本地
+    fetchFromCloud();
+  }
+}
+
+function updateLoginStatus(isLogged) {
+  const btn = document.getElementById('btn-login-status');
+  if (!btn) return;
+  if (isLogged) {
+    btn.innerHTML = '☁️ 已同步';
+    btn.style.color = 'var(--accent)';
+    btn.onclick = () => {
+      if(confirm('确认退出登录吗？退出后将停止云端同步。')) {
+        supabase.auth.signOut().then(() => {
+          sbUser = null;
+          updateLoginStatus(false);
+        });
+      }
+    };
+  } else {
+    btn.innerHTML = '☁️ 离线';
+    btn.style.color = 'var(--ink2)';
+    btn.onclick = () => document.getElementById('loginModal').classList.add('open');
+  }
+}
+
+async function sbSignUp() {
+  if (!supabase) return alert('未配置 Supabase URL');
+  const email = document.getElementById('sb-email').value;
+  const password = document.getElementById('sb-password').value;
+  if (!email || !password) return alert('请填写邮箱和密码');
+  
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if (error) return alert('注册失败: ' + error.message);
+  alert('注册成功，如果需要邮箱验证请前往邮箱点击链接。');
+}
+
+async function sbSignIn() {
+  if (!supabase) return alert('未配置 Supabase URL');
+  const email = document.getElementById('sb-email').value;
+  const password = document.getElementById('sb-password').value;
+  if (!email || !password) return alert('请填写邮箱和密码');
+  
+  const btn = document.querySelector('#loginModal .btn-gen');
+  btn.textContent = '登录中...';
+  
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  btn.textContent = '登录并拉取数据';
+  
+  if (error) return alert('登录失败: ' + error.message);
+  
+  sbUser = data.user;
+  document.getElementById('loginModal').classList.remove('open');
+  updateLoginStatus(true);
+  fetchFromCloud();
+}
+
+// 自动同步防抖：用户操作后 2 秒再上传，避免频繁发包
+function debounceSyncToCloud() {
+  if (!supabase || !sbUser) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    syncToCloud();
+  }, 2000);
+}
+
+async function syncToCloud() {
+  if (!supabase || !sbUser) return;
+  const btn = document.getElementById('btn-login-status');
+  if (btn) btn.innerHTML = '☁️ 同步中...';
+
+  const payload = {
+    user_id: sbUser.id,
+    settings: settings,
+    plan_history: planHistory,
+    recipe_cache: recipeCache,
+    updated_at: new Date().toISOString()
+  };
+
+  const { error } = await supabase
+    .from('meal_sync')
+    .upsert(payload, { onConflict: 'user_id' });
+
+  if (btn) {
+    if (error) {
+      console.error('云端同步失败', error);
+      btn.innerHTML = '☁️ 同步失败';
+      btn.style.color = 'var(--red)';
+    } else {
+      btn.innerHTML = '☁️ 已同步';
+      btn.style.color = 'var(--accent)';
+    }
+  }
+}
+
+async function fetchFromCloud() {
+  if (!supabase || !sbUser) return;
+  const btn = document.getElementById('btn-login-status');
+  if (btn) btn.innerHTML = '☁️ 拉取中...';
+
+  const { data, error } = await supabase
+    .from('meal_sync')
+    .select('*')
+    .eq('user_id', sbUser.id)
+    .single();
+
+  if (error && error.code !== 'PGRST116') {
+    // PGRST116 是找不到记录（新用户），不需要报错
+    console.error('云端拉取失败', error);
+    if (btn) btn.innerHTML = '☁️ 拉取失败';
+    return;
+  }
+
+  if (data) {
+    // 合并云端数据
+    if (data.settings) settings = data.settings;
+    if (data.plan_history) planHistory = data.plan_history;
+    if (data.recipe_cache) recipeCache = Object.assign(recipeCache, data.recipe_cache); // 避免覆盖本地新产生的菜谱
+    
+    // 强制保存一次合并后的数据到本地，刷新界面
+    localStorage.setItem('mealplanner_settings', JSON.stringify(settings));
+    localStorage.setItem('mealplanner_history', JSON.stringify(planHistory));
+    localStorage.setItem('mealplanner_recipes', JSON.stringify(recipeCache));
+    
+    // 如果没有正在进行的计划，且有历史，取历史最新一条渲染
+    if (!currentPlan && planHistory.length > 0) {
+      currentPlan = planHistory[0].plan;
+      shopItems = planHistory[0].shop || [];
+    }
+    
+    renderPlan();
+    renderHistory();
+  }
+  
+  if (btn) {
+    btn.innerHTML = '☁️ 已同步';
+    btn.style.color = 'var(--accent)';
+  }
+}
+
+// 页面加载完成后尝试初始化
+document.addEventListener('DOMContentLoaded', () => {
+  initSupabase();
+});
 
 function openCardGenerator() {
   window.open('redbook-generator.html', '_blank');
