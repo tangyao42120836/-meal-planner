@@ -1497,21 +1497,21 @@ function saveToStorage() {
 // 注意：你需要替换下面的 SUPABASE_URL 和 SUPABASE_KEY 为你自己的真实配置
 const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
 const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
-let supabase = null;
+let sbClient = null;
 let sbUser = null;
 let syncTimer = null;
 
 function initSupabase() {
   if (SUPABASE_URL === 'YOUR_SUPABASE_URL_HERE') return; // 用户未配置
   try {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     checkSession();
   } catch(e) { console.warn('Supabase 初始化失败', e); }
 }
 
 async function checkSession() {
-  if (!supabase) return;
-  const { data } = await supabase.auth.getSession();
+  if (!sbClient) return;
+  const { data } = await sbClient.auth.getSession();
   if (data.session) {
     sbUser = data.session.user;
     updateLoginStatus(true);
@@ -1528,7 +1528,7 @@ function updateLoginStatus(isLogged) {
     btn.style.color = 'var(--accent)';
     btn.onclick = () => {
       if(confirm('确认退出登录吗？退出后将停止云端同步。')) {
-        supabase.auth.signOut().then(() => {
+        sbClient.auth.signOut().then(() => {
           sbUser = null;
           updateLoginStatus(false);
         });
@@ -1542,18 +1542,18 @@ function updateLoginStatus(isLogged) {
 }
 
 async function sbSignUp() {
-  if (!supabase) return alert('未配置 Supabase URL');
+  if (!sbClient) return alert('未配置 Supabase URL');
   const email = document.getElementById('sb-email').value;
   const password = document.getElementById('sb-password').value;
   if (!email || !password) return alert('请填写邮箱和密码');
   
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  const { data, error } = await sbClient.auth.signUp({ email, password });
   if (error) return alert('注册失败: ' + error.message);
   alert('注册成功，如果需要邮箱验证请前往邮箱点击链接。');
 }
 
 async function sbSignIn() {
-  if (!supabase) return alert('未配置 Supabase URL');
+  if (!sbClient) return alert('未配置 Supabase URL');
   const email = document.getElementById('sb-email').value;
   const password = document.getElementById('sb-password').value;
   if (!email || !password) return alert('请填写邮箱和密码');
@@ -1561,7 +1561,7 @@ async function sbSignIn() {
   const btn = document.querySelector('#loginModal .btn-gen');
   btn.textContent = '登录中...';
   
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
   btn.textContent = '登录并拉取数据';
   
   if (error) return alert('登录失败: ' + error.message);
@@ -1574,7 +1574,7 @@ async function sbSignIn() {
 
 // 自动同步防抖：用户操作后 2 秒再上传，避免频繁发包
 function debounceSyncToCloud() {
-  if (!supabase || !sbUser) return;
+  if (!sbClient || !sbUser) return;
   clearTimeout(syncTimer);
   syncTimer = setTimeout(() => {
     syncToCloud();
@@ -1582,7 +1582,7 @@ function debounceSyncToCloud() {
 }
 
 async function syncToCloud() {
-  if (!supabase || !sbUser) return;
+  if (!sbClient || !sbUser) return;
   const btn = document.getElementById('btn-login-status');
   if (btn) btn.innerHTML = '☁️ 同步中...';
 
@@ -1594,7 +1594,7 @@ async function syncToCloud() {
     updated_at: new Date().toISOString()
   };
 
-  const { error } = await supabase
+  const { error } = await sbClient
     .from('meal_sync')
     .upsert(payload, { onConflict: 'user_id' });
 
@@ -1611,11 +1611,11 @@ async function syncToCloud() {
 }
 
 async function fetchFromCloud() {
-  if (!supabase || !sbUser) return;
+  if (!sbClient || !sbUser) return;
   const btn = document.getElementById('btn-login-status');
   if (btn) btn.innerHTML = '☁️ 拉取中...';
 
-  const { data, error } = await supabase
+  const { data, error } = await sbClient
     .from('meal_sync')
     .select('*')
     .eq('user_id', sbUser.id)
