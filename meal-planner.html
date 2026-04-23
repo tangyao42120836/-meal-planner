@@ -1495,8 +1495,8 @@ function saveToStorage() {
 
 // ============ SUPABASE SYNC ============
 // 注意：你需要替换下面的 SUPABASE_URL 和 SUPABASE_KEY 为你自己的真实配置
-const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
-const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
+const SUPABASE_URL = 'https://kqnokdccgwmbwwopdeai.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_2d6Gz-xQ_6qevkN8Q0PTdw_wtPZzpB8';
 let sbClient = null;
 let sbUser = null;
 let syncTimer = null;
@@ -1549,7 +1549,17 @@ async function sbSignUp() {
   
   const { data, error } = await sbClient.auth.signUp({ email, password });
   if (error) return alert('注册失败: ' + error.message);
-  alert('注册成功，如果需要邮箱验证请前往邮箱点击链接。');
+  
+  // 注册成功后，有些 Supabase 设置是自动登录的
+  if (data.session) {
+    sbUser = data.session.user;
+    document.getElementById('loginModal').classList.remove('open');
+    updateLoginStatus(true);
+    fetchFromCloud();
+    alert('注册成功并已自动登录！');
+  } else {
+    alert('注册成功，请点击“登录”按钮进行登录，或者前往邮箱验证。');
+  }
 }
 
 async function sbSignIn() {
