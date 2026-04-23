@@ -3120,21 +3120,46 @@ async function generateShopList() {
 
   let planContext = '';
   if (currentPlan) {
-    const dishes = currentPlan.days.flatMap(d => d.meals.map(m => m.name)).join('、');
-    planContext = `根据本周计划的菜品（${dishes}），`;
+    // 尝试从预加载的食谱缓存中提取更精确的食材信息
+    const detailedIngredients = [];
+    const dishes = [];
+    
+    currentPlan.days.forEach(d => {
+      d.meals.forEach(m => {
+        dishes.push(m.name);
+        const key = `${d.day}-${m.type}-${m.name}`;
+        if (recipeCache[key] && recipeCache[key].ingredients) {
+          const ings = recipeCache[key].ingredients.map(i => `${i.name}(${i.amount})`).join(', ');
+          if (ings) detailedIngredients.push(`【${m.name}】需要：${ings}`);
+        }
+      });
+    });
+    
+    const dishesStr = dishes.join('、');
+    
+    if (detailedIngredients.length > 0) {
+      planContext = `根据本周计划的菜品（${dishesStr}），我已经为你提取了部分菜品的具体配料要求，请严格按照这些配料来整理采购清单，不要遗漏也不要自己瞎编：
+${detailedIngredients.join('\n')}
+
+对于上面没有列出具体配料的菜品，请你根据经验推断所需食材。`;
+    } else {
+      planContext = `根据本周计划的菜品（${dishesStr}），请你根据经验推断做这些菜所需的食材，整理成采购清单。`;
+    }
   }
 
   const prompt = `${getUserContext()}
 
-${planContext}请为我生成一份在${settings.store}的采购清单，适合${settings.people}，${settings.time}备餐。
+${planContext}
+
+请为我生成一份在${settings.store}的采购清单，适合${settings.people}，${settings.time}备餐。
 
 要求：
 1. 按食材分类（蛋白质、蔬菜、半成品/冷冻、常备/主食、常备/调料）
-2. 豆腐/腐竹/豆干/豆浆必须归类到“蛋白质”，不要单独开“豆制品”分类。
-3. 如果上面给了具体菜品列表：只允许列出做这些菜所需的食材，不要为了“补充营养/凑蛋白质”额外添加计划里没出现的食材。
+2. 豆腐/腐竹/豆干/豆皮/豆泡/豆浆必须归类到“蛋白质”，不要单独开“豆制品”分类。
+3. **最关键的一点**：只允许列出做本周菜品必须用到的食材！绝对不允许为了“补充营养”或“凑蛋白质”额外添加任何没出现在菜名或我给的配料表里的食材！
 4. “常备/主食、常备/调料”尽量不要列出（除非明确本周必须新买），如果列出请在 note 里写“常备，缺了再买”。
 5. 不含以下食材：${settings.avoid}
-6. 注明大概用量（如"鸡胸肉 500g"）
+6. 注明大概总用量（如"鸡胸肉 500g"）
 7. 优先推荐山姆/盒马的招牌产品或性价比高的品类
 8. 覆盖一周用量
 
