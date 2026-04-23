@@ -2019,35 +2019,72 @@ async function exportAllCards() {
     btn.textContent = '正在生成图片...';
     btn.disabled = true;
   
-    if (typeof html2canvas !== 'function') {
-      alert('导出组件加载失败，请刷新页面重试');
+    if (typeof html2canvas !== 'function' || typeof JSZip !== 'function') {
+      alert('导出组件或打包组件加载失败，请刷新页面重试');
       btn.textContent = originalText;
       btn.disabled = false;
       return;
     }
   
-    const container = document.getElementById('imageResultContainer');
-    container.innerHTML = ''; // 清空之前生成的图片
+    // 判断是否为移动端
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+      // 移动端：直接展示图片流供长按保存
+      const container = document.getElementById('imageResultContainer');
+      container.innerHTML = ''; // 清空之前生成的图片
 
-    // 如果是手机/Safari，建议用户长按保存；PC也可以右键保存
-    for (let i = 0; i < cards.length; i++) {
+      for (let i = 0; i < cards.length; i++) {
+        try {
+          const canvas = await html2canvas(cards[i], { scale: 3, useCORS: true, backgroundColor: '#fffdf9' });
+          const dataUrl = canvas.toDataURL('image/png');
+          
+          const img = document.createElement('img');
+          img.src = dataUrl;
+          container.appendChild(img);
+          
+          await new Promise(r => setTimeout(r, 100));
+        } catch (err) {
+          console.error(`第 ${i+1} 张图片生成失败：`, err);
+        }
+      }
+
+      document.getElementById('imageResultModal').classList.add('open');
+    } else {
+      // PC 端：打包 ZIP 下载
+      const zip = new JSZip();
+      const folder = zip.folder("打工人带饭图片");
+
+      for (let i = 0; i < cards.length; i++) {
+        try {
+          const canvas = await html2canvas(cards[i], { scale: 3, useCORS: true, backgroundColor: '#fffdf9' });
+          const dataUrl = canvas.toDataURL('image/png');
+          const base64Data = dataUrl.replace(/^data:image\/(png|jpg);base64,/, "");
+          
+          let filename = `图${i + 1}_`;
+          if (cards[i].id.includes('rbCardPlan')) filename += '本周懒人菜单.png';
+          else if (cards[i].id.includes('rbCardShop')) filename += '采购清单.png';
+          else if (cards[i].id.includes('rbCardRecipe')) filename += `食谱_${i - 1}.png`;
+          else filename += `${cards[i].id}.png`;
+
+          folder.file(filename, base64Data, {base64: true});
+        } catch (err) {
+          console.error(`第 ${i+1} 张图片生成失败：`, err);
+        }
+      }
+
       try {
-        const canvas = await html2canvas(cards[i], { scale: 3, useCORS: true, backgroundColor: '#fffdf9' });
-        const dataUrl = canvas.toDataURL('image/png');
-        
-        const img = document.createElement('img');
-        img.src = dataUrl;
-        container.appendChild(img);
-        
-        // 稍微延迟，防止卡死
-        await new Promise(r => setTimeout(r, 100));
-      } catch (err) {
-        console.error(`第 ${i+1} 张图片生成失败：`, err);
+        btn.textContent = '正在生成压缩包...';
+        const content = await zip.generateAsync({type: "blob"});
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(content);
+        a.download = `打工人带饭导出合集_${new Date().getTime()}.zip`;
+        a.click();
+      } catch(e) {
+        alert('压缩包生成失败：' + e.message);
       }
     }
 
-    document.getElementById('imageResultModal').classList.add('open');
-    
     btn.textContent = originalText;
     btn.disabled = false;
   }
