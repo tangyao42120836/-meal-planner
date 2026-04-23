@@ -139,7 +139,7 @@
 
   .c-series {
     font-size: 16px; font-weight: 800; color: var(--red); letter-spacing: 0.8px;
-    margin-bottom: 50px;
+    margin-bottom: 24px;
     min-height: 24px;
   }
   
@@ -206,7 +206,7 @@
     <div class="form-group">
       <label>主标题（必填）</label>
       <input type="text" id="i-title" value="本周省事晚餐" placeholder="如：本周省事晚餐" oninput="updatePreview()">
-      <div class="form-desc">最多 12 字，超长自动换行/缩放</div>
+      <div class="form-desc">最多 20 字，超长自动换行/缩放，最多 3 行</div>
     </div>
     
     <div class="form-group">
@@ -281,25 +281,35 @@
     const titleEl = document.getElementById('p-title');
     let formattedTitle = title;
     
-    // 限制最大字数
-    if (formattedTitle.length > 12) {
-      formattedTitle = formattedTitle.slice(0, 12);
+    // 限制最大字数 20 字
+    if (formattedTitle.length > 20) {
+      formattedTitle = formattedTitle.slice(0, 20);
     }
     
-    // 自动换行：中文超过 6 个字符就强制在中间断开
-    if (formattedTitle.length > 6) {
-      const firstLine = formattedTitle.slice(0, 6);
-      const secondLine = formattedTitle.slice(6);
-      formattedTitle = firstLine + '<br>' + secondLine;
+    // 自动换行算法：按每行最多 7 个字符进行切分（这样 20 字刚好可以分为 7+7+6，排下 3 行）
+    if (formattedTitle.length > 7) {
+      const chunks = [];
+      let str = formattedTitle;
+      while (str.length > 0) {
+        chunks.push(str.slice(0, 7));
+        str = str.slice(7);
+      }
+      formattedTitle = chunks.join('<br>');
     }
     
     titleEl.innerHTML = formattedTitle;
     
-    // 根据字数动态调整字号（基础字号42px）
-    if (title.length > 10) {
-      titleEl.style.fontSize = '36px';
+    // 根据字数和行数动态调整字号和行高
+    // 默认字号 42px（1行或短2行），如果到了 3 行或者总字数超过 12，就需要把字号缩小避免溢出
+    if (title.length > 14) {
+      titleEl.style.fontSize = '32px';
+      titleEl.style.lineHeight = '1.3';
+    } else if (title.length > 7) {
+      titleEl.style.fontSize = '38px';
+      titleEl.style.lineHeight = '1.3';
     } else {
       titleEl.style.fontSize = '42px';
+      titleEl.style.lineHeight = '1.25';
     }
   }
 
