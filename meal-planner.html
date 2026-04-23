@@ -1645,7 +1645,8 @@ async function syncToCloud() {
 async function fetchFromCloud() {
   if (!sbClient || !sbUser) return;
   const btn = document.getElementById('btn-login-status');
-  if (btn) btn.innerHTML = '☁️ 拉取中...';
+  // 保持按钮文本不变，让拉取过程完全静默
+  // if (btn) btn.innerHTML = '☁️ 拉取中...';
 
   const { data, error } = await sbClient
     .from('meal_sync')
