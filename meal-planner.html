@@ -1304,6 +1304,7 @@
           <input type="checkbox" id="expHidePantry" checked onchange="renderExportCards()">
           隐藏常备
         </label>
+        <button class="btn-gen" style="margin-left:auto; padding:6px 12px; font-size:13px;" onclick="exportAllCards()">📸 一键导出全部图片</button>
       </div>
       <div class="export-body" id="exportCards" style="flex:1;"></div>
     </div>
@@ -1683,15 +1684,58 @@ function renderExportCards() {
   if (shopItems && shopItems.length) html += buildShopExportCard(shopItems, title, hide);
   
   // 渲染所有已缓存的食谱
-  const allRecipes = getAllCachedRecipes();
-  if (allRecipes && allRecipes.length > 0) {
-    allRecipes.forEach((recipe, idx) => {
-      html += buildRecipeExportCard(recipe, title, idx);
+  if (plan && plan.days) {
+    const currentMealNames = new Set();
+    plan.days.forEach(d => {
+      (d.meals || []).forEach(m => currentMealNames.add(m.name));
+    });
+
+    const allRecipes = getAllCachedRecipes();
+    let recipeIdx = 0;
+    allRecipes.forEach(recipe => {
+      if (currentMealNames.has(recipe.name)) {
+        html += buildRecipeExportCard(recipe, title, recipeIdx);
+        recipeIdx++;
+      }
     });
   }
   
   wrap.innerHTML = html;
 }
+
+async function exportAllCards() {
+    const cards = document.querySelectorAll('#exportCards .rb-card');
+    if (!cards || cards.length === 0) return alert('没有可以导出的图片');
+    
+    const btn = document.querySelector('#export-tab-cards .btn-gen');
+    const originalText = btn.textContent;
+    btn.textContent = '正在打包导出...';
+    btn.disabled = true;
+  
+    if (typeof html2canvas !== 'function') {
+      alert('导出组件加载失败，请刷新页面重试');
+      btn.textContent = originalText;
+      btn.disabled = false;
+      return;
+    }
+  
+    for (let i = 0; i < cards.length; i++) {
+      try {
+        const canvas = await html2canvas(cards[i], { scale: 3, useCORS: true, backgroundColor: '#fffdf9' });
+        const a = document.createElement('a');
+        a.download = `${cards[i].id}-${Date.now()}.png`;
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+        // 稍微延迟一下，防止浏览器拦截过多下载请求
+        await new Promise(r => setTimeout(r, 600));
+      } catch (err) {
+        console.error('导出失败：', err);
+      }
+    }
+  
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
 
 function getAllCachedRecipes() {
   if (!recipeCache) return [];
@@ -1719,7 +1763,6 @@ function buildPlanExportCard(plan, title) {
         <div class="rb-body">${body}</div>
         <div class="rb-footer">@备餐助手</div>
       </div>
-      <button class="btn-gen" style="width:375px;justify-content:center" onclick="exportCardImage('${cardId}')">⬇️ 导出这张图</button>
     </div>
   `;
 }
@@ -1750,7 +1793,6 @@ function buildShopExportCard(items, title, hidePantryLocal) {
         <div class="rb-body">${hint}${catHtml}</div>
         <div class="rb-footer">@备餐助手</div>
       </div>
-      <button class="btn-gen" style="width:375px;justify-content:center" onclick="exportCardImage('${cardId}')">⬇️ 导出这张图</button>
     </div>
   `;
 }
@@ -1799,7 +1841,6 @@ function buildRecipeExportCard(r, title, idx = 0) {
         </div>
         <div class="rb-footer">@备餐助手</div>
       </div>
-      <button class="btn-gen" style="width:375px;justify-content:center" onclick="exportCardImage('${cardId}')">⬇️ 导出这张图</button>
     </div>
   `;
 }
