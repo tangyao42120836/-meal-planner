@@ -1169,7 +1169,7 @@
   </div>
   <div style="display:flex; align-items:center; gap:8px;">
     <button class="btn-sec" id="btn-login-status" onclick="document.getElementById('loginModal').classList.add('open')" style="padding:6px 12px; font-size:13px; border-radius:6px; background:var(--surface2);">☁️ 离线</button>
-    <button class="header-btn" onclick="openSettings()" title="设置">⚙️</button>
+    <button class="btn-sec" onclick="openSettings()" style="padding:6px 12px; font-size:13px; border-radius:6px; background:var(--surface2);" title="设置偏好">⚙️ 设置偏好</button>
   </div>
 </header>
 
@@ -1653,8 +1653,13 @@ async function fetchFromCloud() {
     .eq('user_id', sbUser.id)
     .single();
 
+  if (error && error.code === 'PGRST116') {
+    // PGRST116 是找不到记录（新用户）。既然云端没数据，就把本地的数据立刻推上去！
+    syncToCloud();
+    return;
+  }
+
   if (error && error.code !== 'PGRST116') {
-    // PGRST116 是找不到记录（新用户），不需要报错
     console.error('云端拉取失败', error);
     if (btn) btn.innerHTML = '☁️ 拉取失败';
     return;
