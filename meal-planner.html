@@ -2257,8 +2257,8 @@ function normalizeShopItem(name, rawCat, rawEmoji) {
   const condimentKeywords = ['生抽', '老抽', '蚝油', '耗油', '盐', '糖', '醋', '料酒', '胡椒', '淀粉', '香油', '芝麻油', '花椒', '八角', '桂皮', '香叶', '孜然', '辣椒粉', '豆瓣酱', '番茄酱', '沙拉酱', '食用油', '橄榄油', '油'];
 
   if (tofuKeywords.some(k => n.includes(k))) {
-    cat = '豆制品/蛋白';
-    emoji = '🫘';
+    cat = '蛋白质';
+    emoji = '🥩';
   }
 
   if (stapleKeywords.some(k => n === k || n.includes(k))) {
@@ -2274,8 +2274,13 @@ function normalizeShopItem(name, rawCat, rawEmoji) {
   }
 
   if (raw.includes('主食') && tofuKeywords.some(k => n.includes(k))) {
-    cat = '豆制品/蛋白';
-    emoji = '🫘';
+    cat = '蛋白质';
+    emoji = '🥩';
+  }
+
+  if (cat.includes('肉类') || cat.includes('水产') || cat.includes('豆制品') || cat.includes('蛋白')) {
+    cat = '蛋白质';
+    emoji = '🥩';
   }
 
   return { cat, emoji, pantry, name: n, qty: '', note: '' };
@@ -3124,19 +3129,20 @@ async function generateShopList() {
 ${planContext}请为我生成一份在${settings.store}的采购清单，适合${settings.people}，${settings.time}备餐。
 
 要求：
-1. 按食材分类（肉类/水产、蔬菜、豆制品/蛋白、半成品/冷冻、常备/主食、常备/调料）
-2. **豆腐/腐竹/豆干**必须归类到“豆制品/蛋白”，不要放到主食/调料。
-3. “常备/主食、常备/调料”尽量不要列出（除非明确本周必须新买），如果列出请在 note 里写“常备，缺了再买”。
-4. 不含以下食材：${settings.avoid}
-5. 注明大概用量（如"鸡胸肉 500g"）
-6. 优先推荐山姆/盒马的招牌产品或性价比高的品类
-7. 覆盖一周用量
+1. 按食材分类（蛋白质、蔬菜、半成品/冷冻、常备/主食、常备/调料）
+2. 豆腐/腐竹/豆干/豆浆必须归类到“蛋白质”，不要单独开“豆制品”分类。
+3. 如果上面给了具体菜品列表：只允许列出做这些菜所需的食材，不要为了“补充营养/凑蛋白质”额外添加计划里没出现的食材。
+4. “常备/主食、常备/调料”尽量不要列出（除非明确本周必须新买），如果列出请在 note 里写“常备，缺了再买”。
+5. 不含以下食材：${settings.avoid}
+6. 注明大概用量（如"鸡胸肉 500g"）
+7. 优先推荐山姆/盒马的招牌产品或性价比高的品类
+8. 覆盖一周用量
 
 只返回合法JSON，格式如下，不要输出其他文字：
 {
   "categories": [
     {
-      "name": "肉类/水产",
+      "name": "蛋白质",
       "emoji": "🥩",
       "items": [
         {"name": "鸡胸肉", "qty": "500g", "note": "可做3-4顿"}
@@ -3155,6 +3161,14 @@ ${planContext}请为我生成一份在${settings.store}的采购清单，适合$
         shopItems.push({ ...item, cat: normalized.cat, catEmoji: normalized.emoji, pantry: normalized.pantry, checked: false, id: Math.random().toString(36).slice(2) });
       });
     });
+    if (currentPlan && currentPlan.days) {
+      const dishes = currentPlan.days.flatMap(d => (d.meals || []).map(m => m.name)).join('、');
+      const tofuKs = ['豆腐', '腐竹', '豆干', '豆皮', '豆泡', '豆浆'];
+      const hasTofuDish = tofuKs.some(k => dishes.includes(k));
+      if (!hasTofuDish) {
+        shopItems = shopItems.filter(i => !tofuKs.some(k => (i.name || '').includes(k)));
+      }
+    }
     saveToStorage();
     renderShopList(data.categories);
   } catch(e) {
