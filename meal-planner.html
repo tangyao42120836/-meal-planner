@@ -1606,7 +1606,19 @@ function generateCoverAndCaption() {
     if (data.cta) capBody += `需要可复制纯文本的姐妹，在评论区扣【清单】，我发你！\n\n`;
     capBody += `#${data.series.replace(/\s|🍱|🥘|🍳/g,'')} #上班族带饭 #备餐 #懒人食谱 #极简做法`;
 
-    const themesLine = data.top3.split('/').map(t => '#' + t.trim()).filter(t => t !== '#').join(' / ');
+    const themesLine = data.top3.split('/').map(t => '#' + t.trim()).filter(t => t !== '#').join(' ');
+
+    // 处理大标题：为了强制一排 6 个字符，我们可以根据字数在恰当位置插入 <br>
+    // 对于中文字符，直接利用 substr 截取
+    let formattedTitle = v.title;
+    if (formattedTitle.length > 6) {
+      // 每 6 个字断一行
+      const chunks = [];
+      for (let i = 0; i < formattedTitle.length; i += 6) {
+        chunks.push(formattedTitle.slice(i, i + 6));
+      }
+      formattedTitle = chunks.join('<br>');
+    }
 
     const cardHtml = `
       <div class="cg-result-card">
@@ -1614,8 +1626,8 @@ function generateCoverAndCaption() {
           <div class="cg-cover-preview" id="cg-cover-${index}">
             <div class="cg-cover-bg"></div>
             <div class="cg-cover-inner" style="display:flex; flex-direction:column; padding:32px 24px;">
-              <div style="font-size:16px; font-weight:800; color:var(--red); letter-spacing:0.8px;">${data.series}</div>
-              <div style="font-family:'Noto Serif SC',serif; font-size:44px; font-weight:900; line-height:1.12; color:var(--ink); margin-top:50px; letter-spacing:1px; word-break:break-word;">${v.title}</div>
+              <div style="font-size:16px; font-weight:800; color:#ff4d4f; letter-spacing:0.8px;">${data.series}</div>
+              <div style="font-family:'Noto Serif SC',serif; font-size:44px; font-weight:900; line-height:1.2; color:var(--ink); margin-top:50px; letter-spacing:1px; word-break:break-word;">${formattedTitle}</div>
               <div style="margin-top:18px;">
                 <span style="display:inline-block; background:#fff1f0; color:var(--red); padding:6px 12px; border-radius:8px; font-size:18px; font-weight:600;">${paramText}</span>
               </div>
