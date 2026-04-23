@@ -211,9 +211,11 @@
     font-family: inherit;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     transition: background 0.15s;
     white-space: nowrap;
+    box-sizing: border-box;
   }
   .btn-gen:hover { background: var(--accent2); }
   .btn-gen:disabled { background: #c0b8a8; cursor: not-allowed; }
@@ -671,9 +673,9 @@
     min-height: 0; /* 修复 flex 子元素滚动条失效问题 */
   }
   @media (max-width: 768px) {
-    .cover-generator-layout { flex-direction: column; overflow: auto; }
-    .cg-form { width: 100%; overflow: visible; padding-right: 0; }
-    .cg-preview { overflow: visible; }
+    .cover-generator-layout { flex-direction: column; overflow: auto; padding: 14px; }
+    .cg-form { width: 100%; overflow: visible; padding-right: 0; padding-bottom: 20px; }
+    .cg-preview { overflow: visible; padding: 14px; }
   }
   
   /* 复用 cover-generator.html 中的卡片样式 */
@@ -708,6 +710,8 @@
     transform-origin: top center;
   }
   @media (max-width: 400px) {
+    header { padding: 14px 16px; }
+  }
     .cg-cover-wrap { width: 100%; align-items: center; }
     .cg-cover-preview { transform: scale(0.85); margin-bottom: -63px; }
   }
@@ -1187,8 +1191,8 @@
     <div class="logo">备餐<span>助手</span></div>
   </div>
   <div style="display:flex; align-items:center; gap:8px;">
-    <button class="btn-sec" id="btn-login-status" onclick="document.getElementById('loginModal').classList.add('open')" style="padding:6px 12px; font-size:13px; border-radius:6px; background:var(--surface2);">☁️ 离线</button>
-    <button class="btn-sec" onclick="openSettings()" style="padding:6px 12px; font-size:13px; border-radius:6px; background:var(--surface2);" title="设置偏好">⚙️ 设置偏好</button>
+    <button class="btn-sec" id="btn-login-status" onclick="document.getElementById('loginModal').classList.add('open')" style="padding:6px 10px; font-size:13px; border-radius:6px; background:var(--surface2); border:1px solid transparent; white-space:nowrap;">☁️ 离线</button>
+    <button class="btn-sec" onclick="openSettings()" style="padding:6px 10px; font-size:13px; border-radius:6px; background:var(--surface2); border:1px solid transparent; white-space:nowrap;" title="设置偏好">⚙️ 设置偏好</button>
   </div>
 </header>
 
