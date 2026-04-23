@@ -686,7 +686,7 @@
     gap: 20px;
   }
   @media (max-width: 600px) {
-    .cg-result-card { flex-direction: column; }
+    .cg-result-card { flex-direction: column; align-items: center; overflow: hidden; padding: 14px; }
   }
   .cg-cover-wrap {
     width: 315px;
@@ -705,6 +705,11 @@
     box-shadow: 0 8px 20px rgba(0,0,0,0.08);
     display: flex;
     flex-direction: column;
+    transform-origin: top center;
+  }
+  @media (max-width: 400px) {
+    .cg-cover-wrap { width: 100%; align-items: center; }
+    .cg-cover-preview { transform: scale(0.85); margin-bottom: -63px; }
   }
   .cg-cover-inner {
     padding: 24px 20px;
@@ -740,6 +745,13 @@
     white-space: pre-wrap;
     overflow-y: auto;
   }
+  .export-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+  }
   .export-controls input[type="text"] {
     flex: 1;
     border: 1px solid var(--border);
@@ -747,6 +759,13 @@
     padding: 10px 12px;
     font-size: 14px;
     background: var(--surface);
+    min-width: 100px;
+  }
+  @media (max-width: 600px) {
+    .export-controls { flex-wrap: wrap; padding: 14px 12px; gap: 10px; }
+    .export-controls input[type="text"] { width: 100%; flex: 1 1 100%; }
+    .export-toggle { flex: 1; margin-right: auto; }
+    .export-controls button { flex: 1; padding: 10px; }
   }
   .export-toggle {
     display: inline-flex;
@@ -1342,7 +1361,7 @@
     
     <!-- 内页导出 -->
     <div id="export-tab-cards" class="export-tab-content active">
-      <div class="export-controls" style="display:flex; align-items:center; gap:10px; padding:14px 20px; border-bottom:1px solid var(--border);">
+      <div class="export-controls">
         <input id="expTitle" type="text" value="打工人带饭指南 🍱">
         <label class="export-toggle">
           <input type="checkbox" id="expHidePantry" checked onchange="renderExportCards()">
