@@ -1615,13 +1615,11 @@ function generateCoverAndCaption() {
       formattedTitle = formattedTitle.slice(0, 12);
     }
     
+    // 如果大于6个字，进行一次分割（最多变两行）
     if (formattedTitle.length > 6) {
-      // 每 6 个字断一行，且由于前面限制了最多12个字，所以这里最多只会被分成 2 块
-      const chunks = [];
-      for (let i = 0; i < formattedTitle.length; i += 6) {
-        chunks.push(formattedTitle.slice(i, i + 6));
-      }
-      formattedTitle = chunks.join('<br>');
+      const firstLine = formattedTitle.slice(0, 6);
+      const secondLine = formattedTitle.slice(6);
+      formattedTitle = firstLine + '<br>' + secondLine;
     }
 
     const cardHtml = `
@@ -1631,7 +1629,7 @@ function generateCoverAndCaption() {
             <div class="cg-cover-bg"></div>
             <div class="cg-cover-inner" style="display:flex; flex-direction:column; padding:32px 24px;">
               <div style="font-size:16px; font-weight:800; color:#ff4d4f; letter-spacing:0.8px;">${data.series}</div>
-              <div style="font-family:'Noto Serif SC',serif; font-size:46px; font-weight:900; line-height:1.2; color:var(--ink); margin-top:50px; letter-spacing:1px; word-break:break-word;">${formattedTitle}</div>
+              <div style="font-family:'Noto Serif SC',serif; font-size:46px; font-weight:900; line-height:1.2; color:var(--ink); margin-top:50px; letter-spacing:1px; word-break:break-all;">${formattedTitle}</div>
               <div style="margin-top:18px;">
                 <span style="display:inline-block; background:#fff5f5; color:var(--ink); padding:8px 16px; border-radius:12px; font-size:22px; font-weight:500;">${paramText}</span>
               </div>
