@@ -1420,6 +1420,7 @@
 </div>
 
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 // ============ STATE ============
 let settings = {
@@ -1725,25 +1726,44 @@ async function exportAllCards() {
     btn.textContent = '正在打包导出...';
     btn.disabled = true;
   
-    if (typeof html2canvas !== 'function') {
-      alert('导出组件加载失败，请刷新页面重试');
+    if (typeof html2canvas !== 'function' || typeof JSZip !== 'function') {
+      alert('导出组件或打包组件加载失败，请刷新页面重试');
       btn.textContent = originalText;
       btn.disabled = false;
       return;
     }
   
+    const zip = new JSZip();
+    const folder = zip.folder("打工人带饭图片");
+
     for (let i = 0; i < cards.length; i++) {
       try {
         const canvas = await html2canvas(cards[i], { scale: 3, useCORS: true, backgroundColor: '#fffdf9' });
-        const a = document.createElement('a');
-        a.download = `${cards[i].id}-${Date.now()}.png`;
-        a.href = canvas.toDataURL('image/png');
-        a.click();
-        // 稍微延迟一下，防止浏览器拦截过多下载请求
-        await new Promise(r => setTimeout(r, 600));
+        // 获取 base64 数据并去掉前面的 data:image/png;base64,
+        const dataUrl = canvas.toDataURL('image/png');
+        const base64Data = dataUrl.replace(/^data:image\/(png|jpg);base64,/, "");
+        
+        let filename = `图${i + 1}_`;
+        if (cards[i].id.includes('rbCardPlan')) filename += '本周懒人菜单.png';
+        else if (cards[i].id.includes('rbCardShop')) filename += '采购清单.png';
+        else if (cards[i].id.includes('rbCardRecipe')) filename += `食谱_${i - 1}.png`;
+        else filename += `${cards[i].id}.png`;
+
+        folder.file(filename, base64Data, {base64: true});
       } catch (err) {
-        console.error('导出失败：', err);
+        console.error(`第 ${i+1} 张图片生成失败：`, err);
       }
+    }
+
+    try {
+      btn.textContent = '正在生成压缩包...';
+      const content = await zip.generateAsync({type: "blob"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(content);
+      a.download = `打工人带饭导出合集_${new Date().getTime()}.zip`;
+      a.click();
+    } catch(e) {
+      alert('压缩包生成失败：' + e.message);
     }
   
     btn.textContent = originalText;
