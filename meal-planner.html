@@ -1447,6 +1447,11 @@
       <input type="text" id="s-avoid" value="鸡蛋" placeholder="例如：鸡蛋,花生,海鲜">
     </div>
     <div class="form-group">
+      <label>饮食主题 / 烹饪偏好</label>
+      <input type="text" id="s-theme" value="懒人快手，一锅出为主" placeholder="如：减脂期低碳高蛋白 / 电饭煲焖饭系列 / 清淡少油">
+      <div style="font-size:11px; color:var(--ink2); margin-top:4px">这会极大地影响 AI 给你排的一周菜单的风格</div>
+    </div>
+    <div class="form-group">
       <label>口味偏好</label>
       <input type="text" id="s-taste" value="中国菜，偏家常口味" placeholder="例如：川菜，偏辣，少油">
     </div>
@@ -1557,6 +1562,7 @@ let settings = {
   store: '山姆+盒马',
   avoid: '鸡蛋',
   taste: '中国菜，偏家常口味',
+  theme: '懒人快手，一锅出为主',
   tools: '空气炸锅,蒸锅,烤箱,炒锅',
   time: '30分钟',
   people: '1人',
@@ -2312,6 +2318,7 @@ function openSettings() {
   document.getElementById('s-store').value = settings.store;
   document.getElementById('s-avoid').value = settings.avoid;
   document.getElementById('s-taste').value = settings.taste;
+  document.getElementById('s-theme').value = settings.theme || '懒人快手，一锅出为主';
   document.getElementById('s-tools').value = settings.tools;
   document.getElementById('s-time').value = settings.time;
   document.getElementById('s-people').value = settings.people;
@@ -2328,6 +2335,7 @@ function saveSettings() {
   settings.store = document.getElementById('s-store').value;
   settings.avoid = document.getElementById('s-avoid').value;
   settings.taste = document.getElementById('s-taste').value;
+  settings.theme = document.getElementById('s-theme').value;
   settings.tools = document.getElementById('s-tools').value;
   settings.time = document.getElementById('s-time').value;
   settings.people = document.getElementById('s-people').value;
@@ -2748,6 +2756,7 @@ async function generatePlan() {
 请为我规划${daysText}的备餐计划，包含${mealMap[meals]}。
 
 核心要求：
+0. **本周主题**：${settings.theme || '懒人快手，一锅出为主'}（请严格围绕这个主题来设计菜品风格！）
 1. **免看火优先**：极大幅度增加空气炸锅、烤箱、蒸锅、电饭煲的使用比例，尽量减少需要人一直站在灶台前翻炒的菜。
 2. **少洗锅优先**：多安排“一锅出”（如焖饭、大烩菜）、烤盘垫锡纸直接烤等吃完好清理的菜式。
 3. **营养均衡**：每顿饭必须包含【蛋白质】(肉/蛋/奶/豆制品) + 【蔬菜】 + 【主食】的合理搭配。如果是一锅出/焖饭，里面必须包含这三类食材。
