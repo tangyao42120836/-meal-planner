@@ -2292,6 +2292,84 @@ function normalizeShopItem(name, rawCat, rawEmoji) {
   return { cat, emoji, pantry, name: n, qty: '', note: '' };
 }
 
+function canonicalizeShopName(name) {
+  let n = (name || '').trim();
+  if (!n) return '';
+
+  n = n.replace(/\s*[（(][^）)]*[）)]\s*$/, '').trim();
+
+  const synonymMap = {
+    '葱花': '葱',
+    '小葱': '葱',
+    '香葱': '葱',
+    '大葱': '葱',
+    '葱段': '葱',
+    '葱末': '葱',
+    '葱白': '葱',
+    '葱绿': '葱',
+    '香菜末': '香菜',
+    '蒜末': '大蒜',
+    '蒜瓣': '大蒜',
+    '蒜': '大蒜',
+    '姜片': '生姜',
+    '姜丝': '生姜',
+    '姜末': '生姜',
+    '姜': '生姜'
+  };
+  if (synonymMap[n]) n = synonymMap[n];
+  return n;
+}
+
+function splitMixedVegetables(name) {
+  const n = (name || '').trim();
+  if (!n.startsWith('混合')) return null;
+  const m = n.match(/^混合(?:时蔬|蔬菜|蔬)(?:\s*)[（(](.+)[)）]$/);
+  if (!m || !m[1]) return [];
+  const parts = m[1].split(/[、,，/\\]+/).map(s => s.trim()).filter(Boolean);
+  return parts.length ? parts : [];
+}
+
+function mergeQty(a, b) {
+  const x = (a || '').trim();
+  const y = (b || '').trim();
+  if (!x) return y;
+  if (!y) return x;
+  if (x === '适量') return y;
+  if (y === '适量') return x;
+  if (x === y) return x;
+  const merged = [x, y].filter(Boolean).filter((v, idx, arr) => arr.indexOf(v) === idx).join(' + ');
+  return merged;
+}
+
+function postProcessShopItems(items) {
+  const expanded = [];
+  (items || []).forEach(it => {
+    const mixed = splitMixedVegetables(it.name);
+    if (mixed !== null) {
+      if (!mixed.length) return;
+      mixed.forEach(v => {
+        expanded.push({ ...it, name: v, qty: it.qty ? '适量' : (it.qty || ''), note: it.note || '' });
+      });
+      return;
+    }
+    expanded.push({ ...it, name: canonicalizeShopName(it.name) });
+  });
+
+  const map = new Map();
+  expanded.forEach(it => {
+    const key = `${it.cat}||${canonicalizeShopName(it.name)}`;
+    const existed = map.get(key);
+    if (!existed) {
+      map.set(key, { ...it, name: canonicalizeShopName(it.name) });
+      return;
+    }
+    existed.qty = mergeQty(existed.qty, it.qty);
+    existed.note = mergeQty(existed.note, it.note);
+  });
+
+  return Array.from(map.values()).map(it => ({ ...it, id: it.id || Math.random().toString(36).slice(2) }));
+}
+
 // ============ TABS ============
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -3171,6 +3249,8 @@ ${planContext}
 6. 注明大概总用量（如"鸡胸肉 500g"）
 7. 优先推荐山姆/盒马的招牌产品或性价比高的品类
 8. 覆盖一周用量
+9. 不要输出“混合蔬菜/混合时蔬”这种笼统条目，必须拆成具体蔬菜分别列出。
+10. 同一种食材不要重复（例如“葱”和“葱花”视为同一种，只保留“葱”；“姜片/姜丝/姜”统一为“生姜”）。
 
 只返回合法JSON，格式如下，不要输出其他文字：
 {
@@ -3195,6 +3275,7 @@ ${planContext}
         shopItems.push({ ...item, cat: normalized.cat, catEmoji: normalized.emoji, pantry: normalized.pantry, checked: false, id: Math.random().toString(36).slice(2) });
       });
     });
+    shopItems = postProcessShopItems(shopItems);
     if (currentPlan && currentPlan.days) {
       const dishes = currentPlan.days.flatMap(d => (d.meals || []).map(m => m.name)).join('、');
       const tofuKs = ['豆腐', '腐竹', '豆干', '豆皮', '豆泡', '豆浆'];
