@@ -174,9 +174,8 @@
   
   .c-main-title.center-mode {
     justify-content: center;
-    align-items: center;
-    text-align: center;
-    /* 居中模式 */
+    /* 去掉 align-items: center，保持其在父容器中左对齐，但整体下移到中间 */
+    align-items: flex-start;
   }
   
   .c-param-bar {
@@ -376,7 +375,8 @@
     
     // 针对居中模式额外处理
     if (!tags && !params) {
-      titleTextEl.style.textAlign = 'center';
+      // 保持内部文字左对齐
+      titleTextEl.style.textAlign = 'left';
     } else {
       titleTextEl.style.textAlign = 'left';
     }
