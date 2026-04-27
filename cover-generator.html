@@ -128,19 +128,29 @@
   
   /* 封面内部排版设计 */
   .cover-inner {
-    padding: 36px 32px;
+    padding: 40px 32px;
     flex: 1;
     display: flex;
     flex-direction: column;
     position: relative;
     z-index: 2;
     box-sizing: border-box;
+    justify-content: flex-start;
+    width: 100%;
   }
 
   .c-series {
     font-size: 16px; font-weight: 800; color: var(--red); letter-spacing: 0.8px;
     margin-bottom: 24px;
     min-height: 24px;
+    flex-shrink: 0;
+    align-self: flex-start;
+    width: 100%;
+    text-align: left;
+  }
+  
+  .c-series.hidden {
+    display: none;
   }
   
   .c-main-title {
@@ -150,7 +160,22 @@
     line-height: 1.25;
     color: var(--ink);
     letter-spacing: 1px;
-    white-space: nowrap;
+    word-break: break-all;
+    text-align: left;
+    margin: 0;
+    flex: 1; /* 让它在垂直空间不足时占用剩余空间 */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    width: 100%;
+  }
+  
+  .c-main-title.center-mode {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    /* 居中模式 */
   }
   
   .c-param-bar {
@@ -162,26 +187,34 @@
     font-size: 22px;
     font-weight: 500;
     margin-top: 18px;
+    flex-shrink: 0;
   }
   
   .c-tags {
-    margin-top: auto;
-    font-size: 17px;
+    margin-top: 24px;
+    font-size: 16px;
     font-weight: 700;
     color: var(--ink2);
     letter-spacing: 0.5px;
     line-height: 1.6;
     word-break: break-word;
+    text-align: center;
+    flex-shrink: 0;
+    width: 100%;
   }
+  .c-tags.hidden { display: none; }
   
   .c-footer {
-    margin-top: 16px;
+    margin-top: 20px;
     text-align: center;
     font-size: 13px;
     color: #a1a1aa;
     letter-spacing: 1px;
     font-weight: 600;
+    flex-shrink: 0;
+    width: 100%;
   }
+  .c-footer.hidden { display: none; }
 
 </style>
 </head>
@@ -240,9 +273,11 @@
       <div class="cover-preview" id="cover-canvas">
         <div class="cover-inner">
           <div class="c-series" id="p-series">打工人带饭指南 🍱</div>
-          <div class="c-main-title" id="p-title">本周省事晚餐</div>
-          <div id="p-params-container">
-            <span class="c-param-bar" id="p-params">2天｜1人</span>
+          <div class="c-main-title" id="p-title">
+            <span id="p-title-text">本周省事晚餐</span>
+            <div id="p-params-container">
+              <span class="c-param-bar" id="p-params">2天｜1人</span>
+            </div>
           </div>
           <div class="c-tags" id="p-tags">#懒人神器 #一锅搞定 #空气炸锅万能</div>
           <div class="c-footer" id="p-footer">@备餐助手</div>
@@ -261,8 +296,16 @@
     const tags = document.getElementById('i-tags').value.trim();
     const footer = document.getElementById('i-footer').value.trim();
 
+    const titleEl = document.getElementById('p-title');
+
     // 更新栏目名
-    document.getElementById('p-series').innerText = series;
+    const seriesEl = document.getElementById('p-series');
+    if (series) {
+      seriesEl.innerText = series;
+      seriesEl.classList.remove('hidden');
+    } else {
+      seriesEl.classList.add('hidden');
+    }
     
     // 更新参数条
     const paramsContainer = document.getElementById('p-params-container');
@@ -273,12 +316,33 @@
       paramsContainer.style.display = 'none';
     }
 
-    // 更新标签和署名
-    document.getElementById('p-tags').innerText = tags;
-    document.getElementById('p-footer').innerText = footer;
+    // 更新标签
+    const tagsEl = document.getElementById('p-tags');
+    if (tags) {
+      tagsEl.innerText = tags;
+      tagsEl.classList.remove('hidden');
+    } else {
+      tagsEl.classList.add('hidden');
+    }
+
+    // 更新署名
+    const footerEl = document.getElementById('p-footer');
+    if (footer) {
+      footerEl.innerText = footer;
+      footerEl.classList.remove('hidden');
+    } else {
+      footerEl.classList.add('hidden');
+    }
+
+    // 检查是否需要居中模式（无标签、无参数）
+    if (!tags && !params) {
+      titleEl.classList.add('center-mode');
+    } else {
+      titleEl.classList.remove('center-mode');
+    }
 
     // 处理大标题排版算法（自动换行、缩放）
-    const titleEl = document.getElementById('p-title');
+    const titleTextEl = document.getElementById('p-title-text');
     let formattedTitle = title;
     
     // 限制最大字数 20 字
@@ -297,19 +361,26 @@
       formattedTitle = chunks.join('<br>');
     }
     
-    titleEl.innerHTML = formattedTitle;
+    titleTextEl.innerHTML = formattedTitle;
     
     // 根据字数和行数动态调整字号和行高
     // 默认字号 42px（1行或短2行），如果到了 3 行或者总字数超过 12，就需要把字号缩小避免溢出
     if (title.length > 14) {
-      titleEl.style.fontSize = '32px';
-      titleEl.style.lineHeight = '1.3';
+      titleTextEl.style.fontSize = '32px';
+      titleTextEl.style.lineHeight = '1.3';
     } else if (title.length > 7) {
-      titleEl.style.fontSize = '38px';
-      titleEl.style.lineHeight = '1.3';
+      titleTextEl.style.fontSize = '38px';
+      titleTextEl.style.lineHeight = '1.3';
     } else {
-      titleEl.style.fontSize = '42px';
-      titleEl.style.lineHeight = '1.25';
+      titleTextEl.style.fontSize = '42px';
+      titleTextEl.style.lineHeight = '1.25';
+    }
+    
+    // 针对居中模式额外处理
+    if (!tags && !params) {
+      titleTextEl.style.textAlign = 'center';
+    } else {
+      titleTextEl.style.textAlign = 'left';
     }
   }
 
